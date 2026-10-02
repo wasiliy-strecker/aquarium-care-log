@@ -1,0 +1,25 @@
+apply plugin: 'com.android.library'
+apply plugin: 'expo-module-gradle-plugin'
+
+group = 'com.appfactory.aquariumlog.nativecore'
+version = '1.0.0'
+
+android {
+    namespace 'com.appfactory.aquariumlog.nativecore'
+    defaultConfig { versionCode 1; versionName '1.0.0' }
+    buildFeatures { buildConfig true }
+    testOptions {
+        unitTests.includeAndroidResources = true
+        unitTests.all { maxHeapSize = '1g'; maxParallelForks = 1 }
+    }
+    compileOptions { coreLibraryDesugaringEnabled true }
+    lint { abortOnError true; checkDependencies false }
+}
+
+dependencies {
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
+    implementation 'androidx.activity:activity-ktx:1.12.4'
+    implementation 'androidx.core:core-ktx:1.17.0'
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.16.1'
+}

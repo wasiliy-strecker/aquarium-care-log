@@ -1,0 +1,9 @@
+node_modules
+android
+modules/*/android
+build
+dist
+.expo
+package-lock.json
+assets
+test-results

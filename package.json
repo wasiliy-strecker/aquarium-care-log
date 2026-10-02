@@ -1,0 +1,75 @@
+{
+  "name": "aquariumlog",
+  "version": "1.0.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start --dev-client --port 8086",
+    "android": "bash scripts/run-dev.sh",
+    "prebuild": "expo prebuild --platform android --no-install",
+    "build:dev": "bash scripts/build-dev.sh",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint src tests app.config.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm test",
+    "check:native": "bash scripts/check-native.sh",
+    "build:preview": "bash scripts/build-preview.sh",
+    "install:preview": "bash scripts/install-preview.sh"
+  },
+  "dependencies": {
+    "@gorhom/bottom-sheet": "5.2.14",
+    "@noble/ciphers": "2.4.0",
+    "@noble/hashes": "2.4.0",
+    "expo": "~57.0.26",
+    "expo-asset": "~57.0.18",
+    "expo-constants": "~57.0.20",
+    "expo-crypto": "~57.0.3",
+    "expo-dev-client": "~57.0.19",
+    "expo-document-picker": "~57.0.3",
+    "expo-file-system": "~57.0.7",
+    "expo-font": "~57.0.4",
+    "expo-image-manipulator": "~57.0.20",
+    "expo-image-picker": "~57.0.20",
+    "expo-linking": "~57.0.11",
+    "expo-router": "~57.0.24",
+    "expo-sharing": "~57.0.22",
+    "expo-splash-screen": "~57.0.9",
+    "expo-sqlite": "~57.0.3",
+    "expo-status-bar": "~57.0.1",
+    "expo-system-ui": "~57.0.4",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-gesture-handler": "~2.32.0",
+    "react-native-reanimated": "4.5.1",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.26.0",
+    "react-native-worklets": "0.10.1",
+    "zod": "4.6.5"
+  },
+  "expo": {
+    "autolinking": {
+      "nativeModulesDir": "./modules"
+    },
+    "doctor": {
+      "appConfigFieldsNotSyncedCheck": {
+        "enabled": false
+      }
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.2",
+    "@types/react": "~19.2.4",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "^57.0.2",
+    "prettier": "^3.9.8",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.1"
+  },
+  "overrides": {
+    "uuid": "11.1.1",
+    "decode-uri-component": "0.5.0"
+  }
+}
