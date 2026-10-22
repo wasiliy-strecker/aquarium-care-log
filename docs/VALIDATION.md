@@ -1,7 +1,8 @@
 # Prüfung AquariumLog
 
 Stand: 22. Oktober 2026. Abgleich mit ModellbauLog und Datenschutz nach MaschinenLog,
-ohne Mehrsprachigkeit. Keine APK oder AAB gebaut und keine Geräteinstallation.
+ohne Mehrsprachigkeit. Anschließend die Dev-APK auf ausdrücklichen Auftrag gebaut
+und auf dem angeschlossenen Smartphone installiert. Keine Store-AAB gebaut.
 
 ## Ausgeführte Prüfungen
 
@@ -69,8 +70,23 @@ Nur die benötigten PDF-Pakete und React-Test-Renderer wurden ergänzt.
 
 ## Kurze manuelle Android-Abnahme
 
-Diese Geräteschritte stehen noch aus. Wegen des neuen nativen PDF-Moduls und
-der Android-Konfiguration wird dafür ein aktualisierter Dev-Build benötigt.
+Am 22. Oktober 2026 wurde Quellstand `a46cc8a` mit `npm run build:preview`
+für ARM64 gebaut. Gradle erfolgreich in 2 Minuten 10 Sekunden. Die eigenständige
+Dev-APK enthält JavaScript und läuft ohne Metro. Version 1.0.0, Code 1,
+Paket `com.appfactory.aquarium_log.dev`, Label `AquariumLog Dev`, nicht debuggable.
+Der eigene Dev-Schlüssel liegt im ignorierten `.local/dev.keystore`.
+
+Installation auf HONOR BVL-N49 mit Android 16 über `npm run install:preview`
+erfolgreich. Zuvor war keine AquariumLog-App installiert. Keine Deinstallation
+oder Datenlöschung. Der Helfer prüft Paket und Build-Art und verwendet
+`adb install -r -t -g --no-streaming`. Installer nach Installation: `null`.
+Android bestätigt die gestartete MainActivity und einen laufenden Prozess.
+Im gefilterten Prozessprotokoll keine AndroidRuntime-, ReactNative- oder
+ReactNativeJS-Fehler. Der UI-Abzug zeigt den Sperrbildschirm. Die tatsächliche
+App-Anzeige wurde deshalb nicht bestätigt.
+
+Die folgenden fachlichen Geräteschritte stehen weiterhin aus. Der benötigte
+aktuelle Dev-Build ist jetzt installiert.
 
 1. Hell-/Dunkelmodus, Logoübergang, Kartenfotos und virtuelle Übersicht prüfen.
 2. Ungültige Namen, Volumen und Messwerte speichern. Feldmarkierung und Scrollen
