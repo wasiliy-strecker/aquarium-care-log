@@ -380,7 +380,7 @@ export function Button({
             : disabled
               ? c.disabled
               : danger
-                ? c.destructiveContainer
+                ? c.destructive
                 : c.primary,
         justifyContent: 'center',
         alignItems: 'center',

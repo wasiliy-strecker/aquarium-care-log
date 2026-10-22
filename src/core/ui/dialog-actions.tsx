@@ -64,7 +64,7 @@ export function DialogActions({
                 ? action.disabled
                   ? c.disabled
                   : action.danger
-                    ? c.destructiveContainer
+                    ? c.destructive
                     : c.primary
                 : 'transparent',
               flexDirection: 'row',
