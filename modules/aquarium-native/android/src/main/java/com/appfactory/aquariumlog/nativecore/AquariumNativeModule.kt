@@ -9,10 +9,29 @@ import org.json.JSONArray
 import java.util.UUID
 
 class AquariumNativeModule : Module() {
+    private var previews: PdfPreviewStore? = null
+    @Synchronized private fun previewStore(): PdfPreviewStore = previews ?: PdfPreviewStore(context).also { previews = it }
     private val context get() = requireNotNull(appContext.reactContext)
     override fun definition() = ModuleDefinition {
         Name("AquariumNative")
-        AsyncFunction("validatePhoto") { uri: String -> validatePhoto(privateFile(context, uri)) }
+        View(AquariumPdfView::class) {
+            Prop("session") { view: AquariumPdfView, id: String -> view.open(previewStore(), id) }
+        }
+        AsyncFunction("openPdfPreview") { uri: String -> previewStore().open(uri) }
+        AsyncFunction("renderPdfPage") { session: String, index: Int, width: Int -> previewStore().render(session, index, width) }
+        AsyncFunction("closePdfPreview") { session: String -> previewStore().close(session) }
+        AsyncFunction("sharePdfs") { uris: List<String> ->
+            context.startActivity(pdfShareIntent(context, uris))
+        }.runOnQueue(Queues.MAIN)
+        AsyncFunction("printPdf") { uri: String, name: String ->
+            val file = privateDocument(context, uri)
+            val activity = requireNotNull(appContext.currentActivity)
+            val manager = activity.getSystemService(android.content.Context.PRINT_SERVICE) as android.print.PrintManager
+            manager.print(name, OriginalPdfPrintAdapter(file, name), null)
+            Unit
+        }.runOnQueue(Queues.MAIN)
+        OnDestroy { previews?.closeAll() }
+        AsyncFunction("validatePhoto") { uri: String -> validatePhoto(privateFile(context, uri)); Unit }
         AsyncFunction("saveBackupFile") { uri: String, name: String, promise: Promise ->
             try {
                 val file = privateFile(context, uri)
@@ -39,8 +58,8 @@ class AquariumNativeModule : Module() {
                 if (ReminderNotifier.availability(context, reminder.isPunctual) != ReminderAvailability.AVAILABLE) warnings.add("${reminder.label}: Benachrichtigungen sind nicht freigegeben.")
                 if (reminder.isPunctual && !ReminderScheduler.canScheduleExact(context)) warnings.add("${reminder.label}: Ohne Freigabe für genaue Alarme erinnert Android möglicherweise später.")
             }
-            ReminderStore.all(context).filter { !ids.contains(it.aquariumId) }.forEach {
-                if (!ReminderScheduler.cancel(context, it.aquariumId)) warnings.add("Eine alte Erinnerung konnte nicht vollständig entfernt werden.")
+            ReminderStore.statusIds(context).filter { !ids.contains(it) }.forEach {
+                if (!ReminderScheduler.cancel(context, it)) warnings.add("Eine alte Erinnerung konnte nicht vollständig entfernt werden.")
             }
             warnings
         }
@@ -48,14 +67,19 @@ class AquariumNativeModule : Module() {
             mapOf("notifications" to ReminderNotifier.notificationsEnabled(context),
                 "exact" to ReminderScheduler.canScheduleExact(context),
                 "doNotDisturb" to ReminderNotifier.doNotDisturbEnabled(context),
-                "schedules" to ReminderStore.all(context).map { ReminderScheduler.status(context, it.aquariumId) })
+                "availability" to mapOf("normal" to ReminderNotifier.availability(context, false).wireValue,
+                    "punctualWithSound" to ReminderNotifier.availability(context, true).wireValue),
+                "schedules" to ReminderStore.statusIds(context).map { ReminderScheduler.status(context, it) })
         }
         AsyncFunction("acknowledge") { id: String -> ReminderNotifier.acknowledge(context, id) }
-        AsyncFunction("testReminder") { punctual: Boolean ->
-            ReminderNotifier.showTest(context, null, "AquariumLog", "aquarium", "Test", null, null, punctual)
+        AsyncFunction("testReminder") { request: Map<String, String?> ->
+            val mode = requireNotNull(request["deliveryMode"])
+            require(mode == "normal" || mode == "punctualWithSound")
+            ReminderNotifier.showTest(context, request["aquariumId"], request["label"].orEmpty(),
+                request["categoryLabel"].orEmpty(), request["latestValue"], null, mode == "punctualWithSound")
         }
-        AsyncFunction("openReminderSettings") { exact: Boolean ->
-            context.startActivity(reminderSettingsIntent(context, exact))
+        AsyncFunction("openReminderSettings") { target: String, mode: String? ->
+            openReminderSettings(context, target, mode)
         }.runOnQueue(Queues.MAIN)
         OnActivityEntersForeground { ReminderScheduler.rescheduleAll(context) }
     }

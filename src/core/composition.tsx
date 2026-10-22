@@ -1,5 +1,15 @@
 import { StartupError, StartupPending } from './startup/startup';
 import { androidPasswordKey } from './backup/password-key';
+import { expoBackupCrypto } from './backup/expo-backup-crypto';
+import { Asset } from 'expo-asset';
+import { File } from 'expo-file-system';
+import { PdfService, type ReportFontBytes } from './pdf/pdf-service';
+import { PdfViewerService } from './pdf/viewer-service';
+import { ReportService } from '../features/pdf/report-service';
+import {
+  DeviceExternalLinks,
+  type ExternalLinks,
+} from './links/external-links';
 import {
   createContext,
   useContext,
@@ -26,6 +36,9 @@ export type Services = {
   backup: BackupService;
   media: MediaPort;
   native: AquariumNative;
+  reports: ReportService;
+  viewer: PdfViewerService;
+  links: ExternalLinks;
 };
 const Context = createContext<
   (Services & { revision: number; refresh(): void }) | null
@@ -49,30 +62,37 @@ async function createServices(): Promise<Services> {
     now: () => new Date().toISOString(),
     random: Crypto.getRandomBytes,
   };
-  const aquariumService = new AquariumService(repository, vault, env, {
-    async sync(aquariums, entries) {
-      return aquariumNative.syncReminders(
-        JSON.stringify(
-          aquariums
-            .filter((r) => r.reminder)
-            .map((r) => {
-              const latest = entries
-                .filter((e) => e.aquariumId === r.id)
-                .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))[0];
-              return {
-                ...r.reminder,
-                aquariumId: r.id,
-                label: r.name,
-                category: 'aquarium',
-                categoryLabel: 'Aquarium',
-                latestValue: latest?.activity ?? null,
-                latestUnit: null,
-              };
-            }),
-        ),
-      );
+  const inspector = new AndroidPhotoValidator();
+  const aquariumService = new AquariumService(
+    repository,
+    vault,
+    env,
+    {
+      async sync(aquariums, entries) {
+        return aquariumNative.syncReminders(
+          JSON.stringify(
+            aquariums
+              .filter((r) => r.reminder)
+              .map((r) => {
+                const latest = entries
+                  .filter((e) => e.aquariumId === r.id)
+                  .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))[0];
+                return {
+                  ...r.reminder,
+                  aquariumId: r.id,
+                  label: r.name,
+                  category: 'aquarium',
+                  categoryLabel: 'Aquarium',
+                  latestValue: latest?.activity ?? null,
+                  latestUnit: null,
+                };
+              }),
+          ),
+        );
+      },
     },
-  });
+    inspector,
+  );
   const media = new ExpoMedia(aquariumService);
   // Only clean startup orphans after SQLite and persistent drafts are available.
   await aquariumService.cleanup(await vault.list());
@@ -105,11 +125,35 @@ async function createServices(): Promise<Services> {
     aquariumService,
     backup: new BackupService(
       aquariumService,
-      new BackupCodec(env, new AndroidPhotoValidator(), androidPasswordKey),
+      new BackupCodec(env, inspector, androidPasswordKey, expoBackupCrypto),
     ),
     media,
     native: aquariumNative,
+    reports: new ReportService(
+      aquariumService,
+      new PdfService(vault, reportFonts),
+    ),
+    viewer: new PdfViewerService(aquariumService, aquariumNative),
+    links: new DeviceExternalLinks(),
   };
+}
+let fonts: Promise<ReportFontBytes> | undefined;
+function reportFonts(): Promise<ReportFontBytes> {
+  return (fonts ??= (async () => {
+    const load = async (module: number) => {
+      const asset = await Asset.fromModule(module).downloadAsync();
+      if (!asset.localUri)
+        throw new Error('Die PDF-Schrift konnte nicht geladen werden.');
+      return new File(asset.localUri).bytes();
+    };
+    return {
+      regular: await load(require('../../assets/ui/Roboto-Regular.ttf')),
+      bold: await load(require('../../assets/ui/Roboto-Bold.ttf')),
+    };
+  })().catch((error) => {
+    fonts = undefined;
+    throw error;
+  }));
 }
 export function ServicesProvider({ children }: { children: ReactNode }) {
   const [services, setServices] = useState<Services>();

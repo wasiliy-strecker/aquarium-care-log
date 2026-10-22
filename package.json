@@ -6,7 +6,7 @@
   "scripts": {
     "start": "expo start --dev-client --port 8086",
     "android": "bash scripts/run-dev.sh",
-    "prebuild": "expo prebuild --platform android --no-install",
+    "prebuild": "expo prebuild --platform android --no-install --no-clean",
     "build:dev": "bash scripts/build-dev.sh",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -16,12 +16,15 @@
     "check": "npm run format:check && npm run lint && npm run typecheck && npm test",
     "check:native": "bash scripts/check-native.sh",
     "build:preview": "bash scripts/build-preview.sh",
-    "install:preview": "bash scripts/install-preview.sh"
+    "install:preview": "bash scripts/install-preview.sh",
+    "build:store": "bash scripts/build_store_aab.sh",
+    "check:store": "python3 -m unittest discover -s scripts -p test_store_aab.py"
   },
   "dependencies": {
     "@gorhom/bottom-sheet": "5.2.14",
     "@noble/ciphers": "2.4.0",
     "@noble/hashes": "2.4.0",
+    "@pdf-lib/fontkit": "1.1.1",
     "expo": "~57.0.26",
     "expo-asset": "~57.0.18",
     "expo-constants": "~57.0.20",
@@ -39,6 +42,7 @@
     "expo-sqlite": "~57.0.3",
     "expo-status-bar": "~57.0.1",
     "expo-system-ui": "~57.0.4",
+    "pdf-lib": "1.17.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",
@@ -62,9 +66,11 @@
   "devDependencies": {
     "@types/node": "^26.6.2",
     "@types/react": "~19.2.4",
+    "@types/react-test-renderer": "19.1.0",
     "eslint": "^9.39.5",
     "eslint-config-expo": "^57.0.2",
     "prettier": "^3.9.8",
+    "react-test-renderer": "19.2.3",
     "typescript": "^6.0.3",
     "vitest": "^5.0.1"
   },

@@ -269,6 +269,14 @@ internal object ReminderStore {
         .values
         .mapNotNull { value -> (value as? String)?.let(StoredReminder::fromJson) }
 
+    fun statusIds(context: Context): Set<String> = preferences(context).all.keys.mapNotNull { key ->
+        when {
+            key.startsWith(schedulePrefix) -> key.removePrefix(schedulePrefix)
+            key.startsWith(planningStatePrefix) -> key.removePrefix(planningStatePrefix)
+            else -> null
+        }
+    }.toSet()
+
     fun remove(context: Context, aquariumId: String) {
         preferences(context).edit()
             .remove(schedulePrefix + aquariumId)

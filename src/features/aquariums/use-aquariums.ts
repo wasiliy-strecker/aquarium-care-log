@@ -1,10 +1,14 @@
 import { useCallback, useState } from 'react';
-import { AppState } from 'react-native';
 import { useFocusEffect, router } from 'expo-router';
 import { useServices } from '../../core/composition';
-import type { EntryDraft, Aquarium, CareEntry } from '../../core/domain/models';
+import type {
+  EntryDraft,
+  Aquarium,
+  CareEntry,
+  AquariumPhoto,
+} from '../../core/domain/models';
 import { PAGE_SIZE } from '../../core/domain/models';
-import type { ReminderStatus } from '../../core/native/aquarium-native';
+import { useReminderStatus } from './use-reminder-status';
 import { errorText } from '../../core/ui/components';
 import { useTask } from '../../core/ui/use-task';
 import {
@@ -14,31 +18,7 @@ import {
   type HistoryItem,
   type AquariumSort,
 } from './presentation-model';
-export function useReminderStatus() {
-  const { native } = useServices();
-  const [status, setStatus] = useState<ReminderStatus>();
-  useFocusEffect(
-    useCallback(() => {
-      let active = true;
-      const load = () =>
-        native
-          .reminderStatus()
-          .then((v) => {
-            if (active) setStatus(v);
-          })
-          .catch(() => {});
-      void load();
-      const l = AppState.addEventListener('change', (s) => {
-        if (s === 'active') void load();
-      });
-      return () => {
-        active = false;
-        l.remove();
-      };
-    }, [native]),
-  );
-  return status;
-}
+export { useReminderStatus } from './use-reminder-status';
 export function useAquariums() {
   const { aquariumService, revision } = useServices();
   const [items, setItems] = useState<DashboardItem[]>([]),
@@ -94,6 +74,7 @@ export function useAquariums() {
 export function useAquariumDetail(id: string, history = false) {
   const { aquariumService, native, revision, refresh } = useServices();
   const [aquarium, setAquarium] = useState<Aquarium>(),
+    [photo, setPhoto] = useState<AquariumPhoto | null>(null),
     [entries, setEntries] = useState<CareEntry[]>([]),
     [comparisons, setComparisons] = useState<Record<string, string | null>>({}),
     [total, setTotal] = useState(0),
@@ -109,13 +90,14 @@ export function useAquariumDetail(id: string, history = false) {
       setLoading(true);
       Promise.all([
         aquariumService.repository.aquariums(),
+        aquariumService.repository.latestPhoto(id),
         aquariumService.repository.entries(
           id,
           history ? search : '',
           history ? offset : 0,
         ),
       ])
-        .then(async ([aquariums, page]) => {
+        .then(async ([aquariums, photo, page]) => {
           const comparisons = await Promise.all(
             page.rows.map(async (e) => {
               const p =
@@ -128,6 +110,7 @@ export function useAquariumDetail(id: string, history = false) {
           if (!active) return;
           setAquarium(aquariums.find((r) => r.id === id));
           setEntries(page.rows);
+          setPhoto(photo);
           setTotal(page.total);
           setComparisons(Object.fromEntries(comparisons));
           setError('');
@@ -161,6 +144,7 @@ export function useAquariumDetail(id: string, history = false) {
   );
   return {
     aquarium,
+    photo,
     entries,
     historyItems: entries.map((entry): HistoryItem => {
       const photos = entry.attachments.filter((a) => a.kind === 'photo');

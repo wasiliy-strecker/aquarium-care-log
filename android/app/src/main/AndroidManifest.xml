@@ -17,7 +17,7 @@
       <data android:scheme="https"/>
     </intent>
   </queries>
-  <application android:name=".MainApplication" android:label="@string/app_name" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:allowBackup="false" android:theme="@style/AppTheme" android:supportsRtl="true" android:enableOnBackInvokedCallback="false" android:fullBackupContent="false">
+  <application android:name=".MainApplication" android:label="@string/app_name" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:allowBackup="false" android:theme="@style/AppTheme" android:supportsRtl="true" android:enableOnBackInvokedCallback="false" android:fullBackupContent="false" android:dataExtractionRules="@xml/aquariumlog_data_extraction_rules">
     <meta-data android:name="EXDevMenuIsOnboardingFinished" android:value="true"/>
     <meta-data android:name="EXDevMenuShowFloatingActionButton" android:value="false"/>
     <meta-data android:name="EXDevMenuShowsAtLaunch" android:value="false"/>

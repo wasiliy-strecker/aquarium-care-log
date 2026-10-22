@@ -11,7 +11,5 @@ export function mergePhotos(
       throw new Error('Das zu ersetzende Foto wurde nicht gefunden.');
     return current.map((photo) => (photo.id === replaceId ? added[0]! : photo));
   }
-  if (current.length + added.length > 200)
-    throw new Error('Ein Pflegeeintrag kann höchstens 200 Fotos enthalten.');
   return [...current, ...added];
 }

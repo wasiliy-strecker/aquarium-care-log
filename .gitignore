@@ -17,3 +17,9 @@ test-results/
 .DS_Store
 
 __pycache__/
+
+.local/
+android/key.properties
+*.p12
+modules/*/android/.gradle/
+modules/*/android/.cxx/

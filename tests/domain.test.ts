@@ -72,6 +72,7 @@ describe('Aquarium and measurement fields', () => {
     const items = [beta, alpha].map((tank) => ({
       aquarium: tank,
       latest: null,
+      photo: null,
       lastEdited: tank.updatedAt,
     }));
     expect(

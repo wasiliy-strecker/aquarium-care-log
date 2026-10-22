@@ -21,6 +21,7 @@ import {
   useTheme,
 } from '../../core/ui/components';
 import { Icon, type IconName } from '../../core/ui/icon';
+import { overlayFrameStyle } from '../../core/ui/overlay-frame';
 const hints: { title: string; icon: IconName; text: string }[] = [
   {
     title: 'Das ganze Aquarium',
@@ -138,6 +139,7 @@ export function PhotoHints({ disabled }: { disabled: boolean }) {
               backdropComponent={HintsBackdrop}
               handleComponent={HintsHandle}
               backgroundStyle={{
+                ...overlayFrameStyle(c.primary),
                 backgroundColor: c.card,
                 borderTopLeftRadius: 28,
                 borderTopRightRadius: 28,

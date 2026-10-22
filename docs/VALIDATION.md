@@ -1,66 +1,90 @@
 # Prüfung AquariumLog
 
-Stand: 2. Oktober 2026. Die erste Umsetzung wurde ohne APK- oder Store-Build,
-Geräteinstallation und automatisierte visuelle Testreihe geprüft.
+Stand: 22. Oktober 2026. Abgleich mit ModellbauLog und Datenschutz nach MaschinenLog,
+ohne Mehrsprachigkeit. Keine APK oder AAB gebaut und keine Geräteinstallation.
 
 ## Ausgeführte Prüfungen
 
-`npm run check` war erfolgreich. Prettier, ESLint und die strikte TypeScript-Prüfung
-sowie alle 13 gezielten Tests in drei Dateien sind durchgelaufen.
+`npm run check` erfolgreich. Prettier, ESLint ohne Warnungen, strikte TypeScript-
+Prüfung und 51 Tests in 12 Dateien bestanden. Laufzeit der Tests etwa 13 Sekunden.
 
-- `domain.test.ts`: erforderlicher Name, optionale Größenangaben, Dezimalwerte,
-  Nullwert, einheitenlose Messung, vergleichbare Messgrößen und Übersichtssuche.
-- `workflows.test.ts`: echte SQLite-Dateien mit erneutem Öffnen, frei benannte
-  Aktivitäten, chronologischer Verlauf mit Suche und Seitenwechsel,
-  Wiederaufnahme von Entwürfen und Fotoersetzung an derselben Position,
-  Bearbeiten ohne Revisionen und sichere Dateibereinigung bei Fehlern und Abbruch.
-- `backup.test.ts`: verschlüsselte Wiederherstellung mit Fotos, Messwerten und
-  Erinnerungen, falsches Passwort, manipulierte und fremde Backups,
-  Zusammenführen neuerer lokaler Daten und Rückabwicklung bei einem SQLite-Fehler.
+Die Tests verwenden echte SQLite-Dateien, synthetische Fotos und PDF-Dateien.
+Geprüft sind insbesondere:
 
-`npx expo export --platform android --output-dir build/metro-check` war erfolgreich.
-Metro hat 1995 Module verarbeitet und ein Android-Hermes-Bundle mit den benötigten
-Assets erstellt. Das ist eine Prüfung der JavaScript- und Asset-Auflösung.
+- Migration von Schema 1 ohne erfundene Erfassungsdaten und ohne Entwurfsverlust.
+- Letztes bebildertes Pflegeereignis unabhängig vom neuesten Eintrag und der
+  Zehner-Vorschau. Fotoauswahl folgt Sortierung, Bearbeitung und Löschung.
+- Vollständiger PDF-Verlauf mit zwölf Einträgen, Messgröße, Wert, Einheit, Notizen
+  und allen Fotos in gespeicherter Reihenfolge. Einzelprotokolle enthalten nur
+  ihren Eintrag. Lange Notizen umbrechen, Fotos bleiben innerhalb der Seite.
+- Getrennte Einzel-/Verlaufslisten, zehn beziehungsweise elf gespeicherte PDFs,
+  Seitenwechsel und Löschen des letzten Dokuments einer Seite.
+- Öffnen, Teilen und Drucken referenzieren die unveränderte gespeicherte PDF.
+  Manipulierte Dateien werden vor dem Aufruf des nativen Ports abgewiesen.
+- Ein echtes altes `.aqbackup` aus Commit `33058c7` bleibt lesbar. Die Expo-Crypto-
+  Wrapper werden gegen unabhängige OpenSSL-Implementierungen geprüft.
+  Jede Datei wird beim Export einmal gelesen und gehasht. Fortschrittsphasen,
+  falsche Passwörter, Dateimanipulation und Schreibfehler sind abgedeckt.
+- PDFs und Erfassungsangaben überstehen Backups. Neuere lokale Einträge und
+  Entwürfe bleiben erhalten. Passende fehlende Entwurfsfotos werden repariert.
+- Verzögertes Verschieben und Kopieren wird vor Folgeaktionen abgewartet.
+- Feldfehler, optionale Werte, Nullmessung, mehr als 200 Fotos und eigene Aktivitäten.
+- Platzierung der Vorschläge ober-/unterhalb des Felds bei geöffneter Tastatur.
+- Erinnerungsarten, Systemziele, konkrete Aquarium-Testbenachrichtigung,
+  Intervallgedächtnis und Abweisung veralteter Statusantworten.
 
-`npm run check:native` war erfolgreich. Das eigene Kotlin-Modul wurde kompiliert.
-Alle 34 JVM-Tests und der Android-Lint des eigenen Moduls sind durchgelaufen.
+`npm run check:native` erfolgreich. 45 JVM-Tests sowie Android-Lint des eigenen
+Moduls bestanden. Geprüft sind Dateizugriff, vollständige JPEG-Dateien,
+PDF-Zugriff, Erinnerungen auf API 24, 25 und 35, Einstellungen, eigene Farbe,
+Kennungen und Aquarium-Navigation. Der Helfer überspringt C++-Builds, die für
+JVM-Tests nicht benötigt werden, sowie wie in der Basis den Lint der beiden
+betroffenen Abhängigkeiten. Der eigene Kotlin-Code wird kompiliert.
 
-- `PrivateFilesTest`: drei Tests für private Dateipfade, echte JPEG-Dekodierung,
-  abgewiesene unvollständige oder fremde Bilder und Erinnerungsplanung.
-- `ReminderAndroidTest`: 28 Tests für Android-Erinnerungen einschließlich
-  Zustellstatus, Test-Benachrichtigungen und Navigation mit eigener App-Kennung.
-- `ReminderSettingsTest`: drei Tests für die System-Einstellungsziele.
+`npx expo export --platform android --output-dir build/metro-check` erfolgreich.
+Metro löst 2210 Module und 36 Assets einschließlich Logo, Fotobeispielen und
+PDF-Schriften auf. Das prüft JavaScript und Assets, nicht die tatsächliche Anzeige.
 
-Die native Prüfung verwendet Robolectric und synthetische Bilder. Ihr Helfer
-überspringt die für JVM-Tests unnötigen C++-Builds von Expo Modules Core und
-React Native Worklets. Wie in der Hausakte-Basis werden die beiden betroffenen
-Abhängigkeits-Lintanalysen ausgelassen. Der Lint des eigenen Aquarium-Moduls
-bleibt aktiv. Diese Prüfung ersetzt keinen vollständigen Development Build.
-Der tatsächliche Build-Helfer verwendet diese Test-Ausschlüsse nicht.
+`npm run prebuild` erfolgreich. Zusätzlich die drei App-Manifeste zusammengeführt:
+`:app:processDevDebugMainManifest`, `:app:processDevReleaseMainManifest` und
+`:app:processStoreReleaseMainManifest`. Dev- und Store-Kennungen sind korrekt.
+Nur Dev Debug enthält Internetzugriff. Store und Dev Release enthalten weder
+Internet- noch Netzwerkstatusberechtigung. Alle drei Varianten schließen
+Android-Cloud-Backup und Geräteübertragung aus. Die Gradle-Abhängigkeiten erzeugen
+dabei auch JavaScript-Assets. Es wird keine APK/AAB paketiert oder signiert.
 
-Die überlappenden Paketversionen im Lockfile entsprechen der Hausakte-Basis
-`dfd6fc8`. Scanner- und PDF-Abhängigkeiten wurden entfernt. Die Git-Arbeitsstände
-von Hausakte und Pflanzenbuch blieben unverändert.
+`npm run check:store` erfolgreich mit neun Tests für Netzwerkrechte und native
+16-KB-Ausrichtung. Shellsyntax und Expo-Plugin-Syntax geprüft.
+`:app:verifyStoreSigning` mit absichtlich fehlender Konfiguration bricht mit
+dem erwarteten Hinweis auf private Store-Signierung ab. Kein Upload-Schlüssel
+wurde erzeugt. Der Auslieferungshelfer ist vorbereitet, ein tatsächliches AAB
+wird erst bei einem gesonderten Release-Auftrag geprüft.
+
+Die Datenschutzseiten wurden gegen MaschinenLog verglichen. Relative Links
+und lokale CSS-Datei sind gültig, keine externen Skripte oder Schriften.
+Die Veröffentlichung auf GitHub Pages benötigt noch den ausdrücklichen
+Push-Auftrag. Der App-Link zeigt bereits auf die eigene vorgesehene Adresse.
+
+Die Referenz-Apps wurden nicht verändert. Keine allgemeinen Abhängigkeitsupdates.
+Nur die benötigten PDF-Pakete und React-Test-Renderer wurden ergänzt.
 
 ## Kurze manuelle Android-Abnahme
 
-Diese Geräteschritte wurden noch nicht ausgeführt. Sie sind für den ersten
-Development Build vorgesehen.
+Diese Geräteschritte stehen noch aus. Wegen des neuen nativen PDF-Moduls und
+der Android-Konfiguration wird dafür ein aktualisierter Dev-Build benötigt.
 
-1. Ein Aquarium mit Namen, 180 Litern, Maßen und Standort anlegen und bearbeiten.
-   Nach einem erneuten Start die gespeicherten Angaben und Suche prüfen.
-2. Die drei vorgeschlagenen und eine eigene Aktivität speichern. Einträge mit
-   Notiz, Temperatur, pH ohne Einheit, Nullwert und ohne Messung prüfen.
-   Mehr als zehn Einträge über den vollständigen Verlauf und dessen Suche öffnen.
-3. Mehrere Kamera- und Galeriefotos hinzufügen, öffnen, vergrößern, ersetzen,
-   sortieren und entfernen. Änderungen speichern oder verwerfen. Einen Entwurf
-   erneut öffnen und die Wiederaufnahme nach unterbrochener Fotoauswahl prüfen.
-4. Eine Erinnerung aktivieren, bearbeiten und testen. Systemfreigaben,
-   Benachrichtigungston, Öffnen des Aquariums und Verhalten nach Neustart prüfen.
-5. Eine Sicherung über den Android-Dateidialog speichern und wiederherstellen.
-   Fotos, Messungen und Erinnerungspläne prüfen. Ein falsches Passwort muss
-   die Wiederherstellung ohne Änderung bestehender Daten abbrechen.
+1. Hell-/Dunkelmodus, Logoübergang, Kartenfotos und virtuelle Übersicht prüfen.
+2. Ungültige Namen, Volumen und Messwerte speichern. Feldmarkierung und Scrollen
+   zum ersten Fehler prüfen. Vorschläge bei geöffneter Tastatur scrollen und wählen.
+3. Fotobeispiele öffnen. Mehrere eigene Fotos aufnehmen, auswählen, ersetzen,
+   sortieren und entfernen. Entwurf nach unterbrochener Fotoauswahl fortsetzen.
+4. Einzel- und Verlaufs-PDF mit und ohne Fotos erstellen. Native Vorschau zoomen,
+   Seiten wechseln, teilen, drucken und gespeicherte Protokolle löschen.
+5. Aquariumdaten ändern und ursprüngliche Erfassungsangaben kontrollieren.
+   Backup im Systemdialog speichern, teilen und mit Passwort wiederherstellen.
+6. Normal-/Ton-Erinnerungen mit App-/Kanalsperre, „Nicht stören“ und fehlenden
+   genauen Alarmen prüfen. Testbenachrichtigung muss das konkrete Aquarium öffnen.
+7. Nach Veröffentlichung den Datenschutzbutton im externen Browser öffnen.
 
-Kamera, System-Dateidialoge, tatsächlicher Prozessverlust und Zustellung auf
-physischer Android-Hardware sind damit die verbleibenden manuellen Grenzen.
-Es wurde keine APK oder AAB erzeugt, installiert, hochgeladen oder gepusht.
+Kamera, tatsächlicher Prozessverlust, Druckdienst und Benachrichtigungszustellung
+auf physischer Hardware sind damit ausdrücklich noch nicht bestätigt.
+Keine aufwendige visuelle Testreihe.

@@ -1,3 +1,5 @@
+import { PageOverlayHost } from './page-overlay';
+import { overlayFrameStyle } from './overlay-frame';
 import { useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
@@ -20,13 +22,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScrollContext } from './scroll-host';
 import { useMaterialDateTime } from './material-date-time';
 import { localDate } from './date-time-model';
-import { light, useTheme } from './theme';
+import { useTheme } from './theme';
 import { Icon, type IconName } from './icon';
 import { useFeedback, type MenuAnchor } from './feedback';
 import { useIsFocused } from 'expo-router/react-navigation';
 import { useStartupLayout } from '../startup/startup';
 export { useTheme } from './theme';
-export const colors = light;
+export { light as colors } from './theme';
 export const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
@@ -70,78 +72,103 @@ export function Page({
     offset = useRef(0),
     height = useRef(0),
     content = useRef(0);
-  const host = useMemo(() => ({ ref, offset, height, content }), []);
+  const host = useMemo(() => {
+    const listeners = new Set<() => void>();
+    return {
+      ref,
+      offset,
+      height,
+      content,
+      subscribe(listener: () => void) {
+        listeners.add(listener);
+        return () => {
+          listeners.delete(listener);
+        };
+      },
+      changed() {
+        listeners.forEach((listener) => listener());
+      },
+    };
+  }, []);
   return (
     <ScrollContext.Provider value={host}>
-      <KeyboardAvoidingView
-        onLayout={onStartupLayout}
-        style={{ flex: 1, backgroundColor: c.background }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        {top}
-        {scroll ? (
-          <Component
-            ref={ref}
-            onScroll={(e) => {
-              offset.current = e.nativeEvent.contentOffset.y;
-            }}
-            scrollEventThrottle={16}
-            onLayout={(e) => {
-              height.current = e.nativeEvent.layout.height;
-            }}
-            onContentSizeChange={(_, h) => {
-              content.current = h;
-            }}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
-            contentContainerStyle={{
-              paddingHorizontal: 16,
-              paddingTop: 8,
-              paddingBottom: fab
-                ? Math.max(112, 56 * fontScale + 48) + safe.bottom
-                : bottom
-                  ? 24
-                  : safe.bottom + 32,
-              gap: 12,
-              width: '100%',
-              maxWidth: 800,
-              alignSelf: 'center',
-              flexGrow: 1,
-            }}
-          >
-            {children}
-          </Component>
-        ) : (
-          children
-        )}
-        {!!fab && (
-          <View
-            pointerEvents="box-none"
-            style={{
-              position: 'absolute',
-              right: 16,
-              bottom: safe.bottom + 16,
-              left: 16,
-              alignItems: 'flex-end',
-            }}
-          >
-            {fab}
-          </View>
-        )}
-        {!!bottom && (
-          <View
-            style={{
-              paddingHorizontal: 16,
-              paddingTop: 8,
-              paddingBottom: safe.bottom + 16,
-              backgroundColor: c.background,
-              gap: 12,
-            }}
-          >
-            {bottom}
-          </View>
-        )}
-      </KeyboardAvoidingView>
+      <PageOverlayHost>
+        <KeyboardAvoidingView
+          onLayout={() => {
+            onStartupLayout();
+            host.changed();
+          }}
+          style={{ flex: 1, backgroundColor: c.background }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          {top}
+          {scroll ? (
+            <Component
+              ref={ref}
+              onScroll={(e) => {
+                offset.current = e.nativeEvent.contentOffset.y;
+                host.changed();
+              }}
+              scrollEventThrottle={16}
+              onLayout={(e) => {
+                height.current = e.nativeEvent.layout.height;
+                host.changed();
+              }}
+              onContentSizeChange={(_, h) => {
+                content.current = h;
+                host.changed();
+              }}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+              contentContainerStyle={{
+                paddingHorizontal: 16,
+                paddingTop: 8,
+                paddingBottom: fab
+                  ? Math.max(112, 56 * fontScale + 48) + safe.bottom
+                  : bottom
+                    ? 24
+                    : safe.bottom + 32,
+                gap: 12,
+                width: '100%',
+                maxWidth: 800,
+                alignSelf: 'center',
+                flexGrow: 1,
+              }}
+            >
+              {children}
+            </Component>
+          ) : (
+            children
+          )}
+          {!!fab && (
+            <View
+              pointerEvents="box-none"
+              style={{
+                position: 'absolute',
+                right: 16,
+                bottom: safe.bottom + 16,
+                left: 16,
+                alignItems: 'flex-end',
+              }}
+            >
+              {fab}
+            </View>
+          )}
+          {!!bottom && (
+            <View
+              style={{
+                paddingHorizontal: 16,
+                paddingTop: 8,
+                paddingBottom: safe.bottom + 16,
+                backgroundColor: c.background,
+                gap: 12,
+              }}
+            >
+              {bottom}
+            </View>
+          )}
+        </KeyboardAvoidingView>
+      </PageOverlayHost>
     </ScrollContext.Provider>
   );
 }
@@ -317,10 +344,10 @@ export function Button({
     ? c.ink + '61'
     : secondary || textOnly
       ? danger
-        ? c.danger
+        ? c.destructive
         : c.primary
       : danger
-        ? '#FFFFFF'
+        ? c.onDestructive
         : c.onPrimary;
   return (
     <Pressable
@@ -342,14 +369,18 @@ export function Button({
         paddingHorizontal: 20,
         borderRadius: 40,
         borderWidth: secondary ? 1 : 0,
-        borderColor: disabled ? c.ink + '1F' : danger ? c.danger : c.outline,
+        borderColor: disabled
+          ? c.ink + '1F'
+          : danger
+            ? c.destructive
+            : c.primary,
         backgroundColor:
           secondary || textOnly
             ? 'transparent'
             : disabled
               ? c.disabled
               : danger
-                ? c.danger
+                ? c.destructiveContainer
                 : c.primary,
         justifyContent: 'center',
         alignItems: 'center',
@@ -392,11 +423,11 @@ export function Fab({
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => ({
-        backgroundColor: c.soft,
+        backgroundColor: c.primary,
         minHeight: 56,
         paddingHorizontal: 20,
         paddingVertical: 16,
-        borderRadius: 16,
+        borderRadius: 999,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
@@ -405,14 +436,14 @@ export function Fab({
         opacity: pressed ? 0.8 : 1,
       })}
     >
-      <Icon name={icon} color={c.onSoft} size={22} />
+      <Icon name={icon} color={c.onPrimary} size={22} />
       <Text
         style={{
           fontFamily: 'RobotoMedium',
           fontWeight: '600',
           fontSize: 16,
           lineHeight: 20,
-          color: c.onSoft,
+          color: c.onPrimary,
           flexShrink: 1,
           textAlign: 'center',
         }}
@@ -442,6 +473,42 @@ export function ActionRow({ children }: { children: ReactNode[] }) {
     </View>
   );
 }
+function FloatingFieldLabel({
+  label,
+  color,
+}: {
+  label: string;
+  color?: string;
+}) {
+  const c = useTheme();
+  return (
+    <View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        top: -10,
+        left: 12,
+        paddingHorizontal: 4,
+        borderRadius: 8,
+        overflow: 'hidden',
+        backgroundColor: c.background,
+        zIndex: 2,
+      }}
+    >
+      <Text
+        style={{
+          color: color ?? c.muted,
+          fontFamily: 'Roboto',
+          fontSize: 12,
+          lineHeight: 18,
+        }}
+      >
+        {label}
+      </Text>
+    </View>
+  );
+}
+
 export function Field({
   label,
   leading,
@@ -466,7 +533,7 @@ export function Field({
       <View
         style={{
           borderWidth: focused ? 2 : 1,
-          borderColor: error ? c.danger : focused ? c.primary : c.muted,
+          borderColor: error ? c.danger : focused ? c.primary : c.border,
           borderRadius: 14,
           backgroundColor: c.input,
           minHeight: 56,
@@ -475,23 +542,10 @@ export function Field({
         }}
       >
         {floated && (
-          <Text
-            pointerEvents="none"
-            style={{
-              position: 'absolute',
-              top: -10,
-              left: 12,
-              paddingHorizontal: 4,
-              backgroundColor: c.background,
-              color: error ? c.danger : focused ? c.primary : c.muted,
-              fontFamily: 'Roboto',
-              fontSize: 12,
-              lineHeight: 18,
-              zIndex: 2,
-            }}
-          >
-            {label}
-          </Text>
+          <FloatingFieldLabel
+            label={label}
+            color={error ? c.danger : focused ? c.primary : c.muted}
+          />
         )}
         {!!leading && (
           <View style={{ paddingLeft: 12, paddingRight: 4 }}>
@@ -513,7 +567,8 @@ export function Field({
             focused ? props.placeholder : floated ? props.placeholder : label
           }
           placeholderTextColor={c.muted}
-          selectionColor={c.primary}
+          cursorColor={c.primary}
+          selectionColor={c.selection}
           style={[
             {
               flex: 1,
@@ -598,7 +653,7 @@ export function SelectField({
       style={{
         minHeight: 56,
         borderWidth: 1,
-        borderColor: c.muted,
+        borderColor: c.border,
         borderRadius: 14,
         backgroundColor: c.input,
         paddingLeft: 16,
@@ -610,21 +665,7 @@ export function SelectField({
         opacity: disabled ? 0.5 : 1,
       }}
     >
-      <Text
-        style={{
-          position: 'absolute',
-          top: -10,
-          left: 12,
-          paddingHorizontal: 4,
-          backgroundColor: c.background,
-          color: c.muted,
-          fontFamily: 'Roboto',
-          fontSize: 12,
-          lineHeight: 18,
-        }}
-      >
-        {label}
-      </Text>
+      <FloatingFieldLabel label={label} />
       {!!icon && <Icon name={icon} color={c.muted} />}
       <Text
         style={{
@@ -666,6 +707,7 @@ export function DateField({
   time = false,
   optional = false,
   disabled = false,
+  timezoneOffsetMinutes,
 }: {
   label: string;
   value: string;
@@ -673,10 +715,24 @@ export function DateField({
   time?: boolean;
   optional?: boolean;
   disabled?: boolean;
+  timezoneOffsetMinutes?: number | null;
 }) {
   const c = useTheme(),
     picker = useMaterialDateTime();
-  const date = value ? localDate(value) : new Date();
+  const instant = value ? localDate(value) : new Date();
+  const shifted = new Date(
+    instant.getTime() + (timezoneOffsetMinutes ?? 0) * 60000,
+  );
+  const date =
+    time && timezoneOffsetMinutes != null
+      ? new Date(
+          shifted.getUTCFullYear(),
+          shifted.getUTCMonth(),
+          shifted.getUTCDate(),
+          shifted.getUTCHours(),
+          shifted.getUTCMinutes(),
+        )
+      : instant;
   async function pick() {
     const next = await picker.date(
       date,
@@ -713,21 +769,7 @@ export function DateField({
       }}
     >
       {picker.dialog}
-      <Text
-        style={{
-          position: 'absolute',
-          top: -10,
-          left: 12,
-          paddingHorizontal: 4,
-          backgroundColor: c.background,
-          color: c.muted,
-          fontFamily: 'Roboto',
-          fontSize: 12,
-          lineHeight: 18,
-        }}
-      >
-        {label}
-      </Text>
+      <FloatingFieldLabel label={label} />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={label}
@@ -833,7 +875,7 @@ export function BusyOverlay({
       <View
         style={{
           flex: 1,
-          backgroundColor: '#00000066',
+          backgroundColor: '#000000B3',
           justifyContent: 'center',
           padding: 24,
         }}
@@ -843,12 +885,14 @@ export function BusyOverlay({
           accessibilityLiveRegion="polite"
           style={{
             backgroundColor: c.card,
+            ...overlayFrameStyle(c.primary),
             borderRadius: 28,
             padding: 24,
             width: '100%',
-            maxWidth: 560,
+            maxWidth: 360,
             maxHeight: '85%',
             alignSelf: 'center',
+            elevation: 12,
           }}
         >
           <ScrollView

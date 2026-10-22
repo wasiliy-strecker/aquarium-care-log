@@ -5,6 +5,7 @@ export type ScrollHost = {
   offset: { current: number };
   height: { current: number };
   content: { current: number };
+  subscribe(listener: () => void): () => void;
 };
 export const ScrollContext = createContext<ScrollHost | null>(null);
 export const useScrollHost = () => useContext(ScrollContext);

@@ -1,5 +1,5 @@
 import { DatabaseSync } from 'node:sqlite';
-import { randomBytes, randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID, pbkdf2Sync } from 'node:crypto';
 import {
   mkdtemp,
   mkdir,
@@ -15,6 +15,8 @@ import { SqlRepository, migrate } from '../src/core/database/repository';
 import { AquariumService } from '../src/features/entries/entry-service';
 import { BackupCodec, BackupService } from '../src/core/backup/backup-service';
 import { fileKey, type Aquarium } from '../src/core/domain/models';
+import { PdfService } from '../src/core/pdf/pdf-service';
+import { ReportService } from '../src/features/pdf/report-service';
 import type {
   Environment,
   FileVault,
@@ -51,7 +53,7 @@ class NodeVault implements FileVault {
   async read(key: string) {
     return new Uint8Array(await readFile(this.uri(key)));
   }
-  async put(bytes: Uint8Array, extension: 'jpg') {
+  async put(bytes: Uint8Array, extension: 'jpg' | 'pdf' = 'jpg') {
     await mkdir(this.directory, { recursive: true });
     const key = `${randomUUID()}.${extension}`;
     await writeFile(this.uri(key) + '.tmp', bytes);
@@ -91,8 +93,27 @@ export async function fixture(
   await migrate(db);
   const repo = new SqlRepository(db);
   const vault = new NodeVault(join(root, 'vault'));
-  const service = new AquariumService(repo, vault, env, reminders);
-  const backup = new BackupService(service, new BackupCodec(env, photos));
+  const service = new AquariumService(repo, vault, env, reminders, photos);
+  const backup = new BackupService(
+    service,
+    new BackupCodec(
+      env,
+      photos,
+      async (password, salt, iterations) =>
+        new Uint8Array(pbkdf2Sync(password, salt, iterations, 32, 'sha256')),
+    ),
+  );
+  const pdf = new PdfService(vault, async () => ({
+    regular: new Uint8Array(
+      await readFile(
+        new URL('../assets/ui/Roboto-Regular.ttf', import.meta.url),
+      ),
+    ),
+    bold: new Uint8Array(
+      await readFile(new URL('../assets/ui/Roboto-Bold.ttf', import.meta.url)),
+    ),
+  }));
+  const reports = new ReportService(service, pdf);
   return {
     root,
     path,
@@ -102,11 +123,21 @@ export async function fixture(
     vault,
     service,
     backup,
+    env,
+    inspector: photos,
+    pdf,
+    reports,
     async close() {
       raw.close();
       await rm(root, { recursive: true, force: true });
     },
   };
+}
+export async function populatedFixture() {
+  const f = await fixture();
+  const tank = aquarium();
+  await f.service.saveAquarium(tank);
+  return { ...f, aquarium: tank };
 }
 export function aquarium(overrides: Partial<Aquarium> = {}): Aquarium {
   return {

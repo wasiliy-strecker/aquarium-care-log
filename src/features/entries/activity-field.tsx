@@ -6,6 +6,7 @@ export function ActivityField(props: {
   onChange(value: string): void;
   disabled: boolean;
   autoFocus: boolean;
+  error?: string;
 }) {
   return (
     <SuggestionField

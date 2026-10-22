@@ -1,0 +1,247 @@
+export const messages = {
+  reportContent: {
+    title: 'PDF erstellen',
+    withPhoto: 'PDF mit Fotos erstellen',
+    compact: 'PDF ohne Fotos erstellen',
+    noAttachments: 'Keine Fotos vorhanden.',
+    withPhotoLabel: 'Mit Fotos',
+    withoutPhotoLabel: 'Ohne Fotos',
+    singleTitle: 'PDF zum Pflegeeintrag',
+    historyTitle: 'PDF zum Pflegeverlauf',
+    savedSingle: 'Gespeicherte Einzelprotokolle',
+    savedHistory: 'Gespeicherte Pflegeverlaufsprotokolle',
+    single: 'Einzelprotokoll',
+    history: 'Pflegeverlaufsprotokoll',
+    documentTitle: 'Aquariumpflegeprotokoll',
+    deleteSingle: 'Einzelprotokoll löschen',
+    deleteHistory: 'Pflegeverlaufsprotokoll löschen',
+    deleteMessage:
+      'Die gespeicherte PDF wird entfernt. Bereits exportierte Kopien bleiben erhalten.',
+    deleteAction: 'Löschen',
+    deletedSingle: 'Einzelprotokoll gelöscht.',
+    deletedHistory: 'Pflegeverlaufsprotokoll gelöscht.',
+    deleting: 'Protokoll wird gelöscht',
+    processing: 'Aquariumpflegeprotokoll wird erstellt …',
+    checking: 'PDF-Dateien werden geprüft …',
+    retry: 'Erneut versuchen',
+    previous: 'Zurück',
+    next: 'Weiter',
+    page: 'Seite {page} von {total}',
+    part: 'Teil {part} von {total}',
+    created: 'Erstellt am {date} Uhr',
+    saved: 'Lokal gespeichert',
+    missing: 'Datei fehlt',
+    loading: 'Pflegeverlaufsprotokolle werden geladen …',
+    loadFailed: 'Pflegeverlaufsprotokolle konnten nicht geladen werden',
+    count: '{count} Protokolle',
+    one: '1 Protokoll',
+    print: 'Drucken',
+    share: 'Teilen',
+    sharePart: 'Diesen Teil teilen',
+    shareAll: 'Alle teilen',
+    choosePart: 'PDF-Teil auswählen',
+    opening: 'PDF wird geöffnet …',
+    missingPart:
+      'Ein Teil dieses Protokolls wurde gelöscht. Die vorhandenen Teile kannst du einzeln öffnen und teilen.',
+    noSteps: 'Für dieses Aquarium gibt es noch keine Pflegeeinträge.',
+    noAquarium: 'Aquarium nicht gefunden.',
+    noStep: 'Pflegeeintrag nicht gefunden.',
+    missingPdf: 'Diese PDF ist nicht mehr vorhanden.',
+    captureTitle: 'Aquariumangaben bei Erfassung',
+    unknownCapture:
+      'Aquariumangaben bei Erfassung nicht gespeichert. Angezeigt werden die aktuellen Aquariumangaben.',
+    unknownZone:
+      'Ursprüngliche Zeitzone nicht gespeichert. Anzeige in der aktuellen Gerätezeitzone.',
+  },
+  reportDocument: {
+    brand: 'AQUARIUMLOG',
+    footer: 'Private Dokumentation deiner Aquarien.',
+    aquarium: 'Aquarium',
+    volume: 'Volumen',
+    dimensions: 'Maße',
+    location: 'Standort',
+    aquariumTitle: 'Aktuelle Aquariumangaben',
+    activity: 'Aktivität',
+    measurement: 'Messgröße',
+    value: 'Wert',
+    unit: 'Einheit',
+    time: 'Zeitpunkt',
+    note: 'Notiz',
+    history: 'Pflegeverlauf',
+    single: 'Einzelner Pflegeeintrag',
+    created: 'PDF erstellt am {date} · {mode}',
+    photo: 'Foto {number} von {total}',
+    continued: '{step} · {time}',
+    partTitle: 'Aquariumpflegeprotokoll – Teil {part} von {total}',
+    partKeep:
+      'Dieser Teil gehört zu einem zusammenhängenden Protokoll. Bitte alle {total} Teile gemeinsam aufbewahren.',
+    partContinued:
+      'Fortsetzung aus Teil {part}. Pflegeeinträge können über die Teilgrenze hinweg fortgesetzt werden.',
+    page: 'Protokollseite {page} von {total}',
+    historyColumns: ['Nr.', 'Zeitpunkt', 'Aktivität', 'Messwert'],
+    notProvided: 'Nicht angegeben',
+  },
+  backupProgress: {
+    preparing: 'Backup wird vorbereitet',
+    checking: 'Dateien werden geprüft',
+    encrypting: 'Backup wird verschlüsselt',
+    decrypting: 'Backup wird entschlüsselt',
+    restoring: 'Backup wird wiederhergestellt',
+    preparingLocation: 'Speicherort wird vorbereitet …',
+    files: '{completed} von {total}',
+  },
+  validation: {
+    aquariumName: 'Bitte einen Aquariennamen eingeben.',
+    shortText: 'Dieses Feld darf höchstens 500 Zeichen enthalten.',
+    occurredAt: 'Bitte ein gültiges Datum und eine Uhrzeit auswählen.',
+    note: 'Die Notiz darf höchstens 20.000 Zeichen enthalten.',
+  },
+  aquariumPhoto: {
+    unavailable: 'Bild nicht verfügbar',
+    unavailableLabel: 'Bild von {title} nicht verfügbar',
+    enlargeLabel: 'Bild von {title} vergrößern',
+  },
+  startup: { loading: 'AquariumLog wird gestartet' },
+  photoExamples: {
+    open: 'Beispiele ansehen',
+    title: 'Beispielfotos',
+    close: 'Schließen',
+    dismiss: 'Beispiele schließen',
+    unavailable: 'Beispiel konnte nicht geladen werden.',
+    imageLabel: 'Beispielfoto: {label}',
+    guidance:
+      'Aquarium und Pflegeschritt gut erkennbar aufnehmen. Trage die Aktivität und einen optionalen Messwert selbst ein.',
+    previous: 'Vorheriges Beispiel',
+    next: 'Nächstes Beispiel',
+    position: '{current} von {total}',
+    attribution: 'KI-generierte Beispiele · nur zur Ansicht',
+    labels: {
+      aquarium: 'Aquarium · Gesamtansicht',
+      care: 'Wasserwechsel · Pflegeschritt',
+      details: 'Aquarium · Details',
+    },
+  },
+  reminders: {
+    title: 'Pflegeerinnerung',
+    helper: 'Optional und nur lokal auf diesem Gerät',
+    enable: 'Erinnerung aktivieren',
+    interval: 'Intervall',
+    month: 'Monat',
+    weekday: 'Wochentag',
+    day: 'Tag',
+    startDate: 'Startdatum',
+    startTime: 'Startzeit',
+    time: 'Uhrzeit',
+    changeDate: 'Datum ändern',
+    changeTime: 'Uhrzeit ändern',
+    deliveryMode: 'Art der Erinnerung',
+    intervals: {
+      hourly: 'Stündlich',
+      daily: 'Täglich',
+      weekly: 'Wöchentlich',
+      monthly: 'Monatlich',
+      yearly: 'Jährlich',
+    },
+    weekdays: {
+      monday: 'Montag',
+      tuesday: 'Dienstag',
+      wednesday: 'Mittwoch',
+      thursday: 'Donnerstag',
+      friday: 'Freitag',
+      saturday: 'Samstag',
+      sunday: 'Sonntag',
+    },
+    modes: {
+      normal: {
+        title: 'Normal',
+        description:
+          'Kann leicht verzögert erscheinen. Die Systemeinstellung „Nicht stören“ wird berücksichtigt.',
+      },
+      punctualWithSound: {
+        title: 'Pünktlich mit Ton',
+        description:
+          'Wird möglichst genau zur gewählten Uhrzeit wie ein Alarm ausgelöst.',
+      },
+    },
+    hourlyHint: 'Ab dem gewählten Start alle 60 Minuten. Nächste Erinnerung: ',
+    timeSuffix: ' Uhr',
+    exactHint:
+      'Für pünktliche Erinnerungen muss Android „Alarme & Erinnerungen“ erlauben. Aktiviere die Freigabe, damit die Erinnerung zuverlässig zur gewählten Zeit mit Ton erscheint.',
+    allowExact: 'Alarme & Erinnerungen erlauben',
+    openExact: '„Alarme & Erinnerungen“ öffnen',
+    openSettings: 'Einstellungen öffnen',
+    edit: 'Erinnerung bearbeiten',
+    appBlocked: 'Benachrichtigungen sind ausgeschaltet',
+    channelBlocked: 'Diese Erinnerungsart ist ausgeschaltet',
+    appBlockedHint:
+      'Erlaube Benachrichtigungen für AquariumLog in den Android-Einstellungen, damit Erinnerungen angezeigt werden können.',
+    channelBlockedHint:
+      'Aktiviere die Benachrichtigungskategorie für diese Erinnerungsart in den Android-Einstellungen.',
+    quiet: '„Nicht stören“ ist aktiv',
+    quietNormalHint:
+      'Normale Erinnerungen können ohne Ton oder eingeblendetes Banner erscheinen.',
+    quietPunctualHint:
+      'Ob ein Alarmton oder Banner erscheint, hängt von deinen „Nicht stören“-Einstellungen und der Alarmlautstärke ab.',
+    unknownHint:
+      'Der Erinnerungsstatus konnte nicht bestätigt werden. Du kannst die Daten trotzdem speichern.',
+    repairHint:
+      'Die Erinnerung ist nicht bestätigt. Mit Speichern wird sie erneut eingerichtet.',
+    repair: 'Erinnerung erneut speichern',
+    test: 'Erinnerung jetzt testen',
+    testing: 'Test-Erinnerung wird gesendet …',
+    testHint:
+      'Ziehe die Benachrichtigungsleiste herunter. Die Test-Erinnerung verschwindet nach einer Minute.',
+    feedback: {
+      invalidClockTime:
+        'Diese Uhrzeit ist wegen der Zeitumstellung nicht verfügbar. Bitte wähle eine andere Uhrzeit.',
+      invalidTime: 'Bitte eine andere Uhrzeit wählen.',
+      exactSettingsFailed:
+        'Die Android-Einstellung „Alarme & Erinnerungen“ konnte nicht geöffnet werden. Öffne sie manuell in den Einstellungen deines Smartphones.',
+      quietSettingsFailed:
+        'Die Systemeinstellungen konnten nicht geöffnet werden. Du findest „Nicht stören“ in den Einstellungen deines Smartphones.',
+      notificationSettingsFailed:
+        'Die Einstellungen konnten nicht geöffnet werden. Öffne in den Einstellungen deines Smartphones „Apps“, dann „AquariumLog“ und „Benachrichtigungen“.',
+      punctualRetained: ' „Pünktlich mit Ton“ bleibt ausgewählt.',
+      statusUnknown: 'Der Erinnerungsstatus konnte nicht bestätigt werden.',
+      testPosted: 'Test-Erinnerung wurde an Android übergeben. ',
+      testQuiet:
+        ' „Nicht stören“ ist aktiv. Ton und Banner können unterdrückt werden.',
+      testAppBlocked: 'Benachrichtigungen sind nicht erlaubt.',
+      testChannelBlocked: 'Diese Erinnerungsart ist in Android gesperrt.',
+      testFailed: 'Test-Erinnerung konnte nicht angezeigt werden.',
+      savedCancelFailed:
+        'Daten gespeichert. Die Erinnerung konnte nicht ausgeschaltet werden. Öffne die Erinnerung und speichere erneut.',
+      savedBlocked:
+        'Daten gespeichert. Erinnerungen sind in Android blockiert. Öffne die Erinnerung und dann die Android-Einstellungen.',
+      savedUnknown:
+        'Daten gespeichert. Der Erinnerungsstatus konnte nicht geprüft werden. Öffne die Erinnerung und speichere erneut.',
+      savedUnconfirmed:
+        'Daten gespeichert. Die Erinnerung konnte nicht bestätigt werden. Öffne die Erinnerung und speichere erneut.',
+      savedInexact:
+        'Daten gespeichert. Für eine pünktliche Erinnerung öffne „Alarme & Erinnerungen“ in den Android-Einstellungen.',
+    },
+    status: {
+      cancelFailed: 'Ausschalten fehlgeschlagen',
+      retryHint: 'Bitte öffne die Erinnerung und speichere erneut.',
+      blocked: 'Erinnerung blockiert',
+      appBlocked: 'Benachrichtigungen sind ausgeschaltet.',
+      channelBlocked: 'Diese Erinnerungsart ist ausgeschaltet.',
+      unplanned: 'Erinnerung nicht geplant',
+      inexact: 'Pünktlichkeit nicht erlaubt',
+      inexactHint:
+        'Erlaube „Alarme & Erinnerungen“ in Android. Bis dahin kann die Erinnerung verspätet erscheinen.',
+      exactPending: 'Pünktliche Planung ausstehend',
+      exactPendingHint:
+        'Der Termin ist noch ungenau geplant. Öffne die Erinnerung und speichere erneut.',
+      deliveryFailed: 'Letzte Zustellung fehlgeschlagen',
+      testHint:
+        'Bitte öffne die Erinnerung und nutze „Erinnerung jetzt testen“.',
+      unknown: 'Planungsstatus unbekannt',
+      unknownHint:
+        'Der Erinnerungsstatus konnte nicht bestätigt werden. Öffne die Erinnerung zum Prüfen.',
+      overdue: 'Erinnerung steht noch aus',
+      next: 'Nächste Erinnerung',
+      overdueHint: '. Android hat diesen Termin noch nicht verarbeitet.',
+    },
+  },
+} as const;

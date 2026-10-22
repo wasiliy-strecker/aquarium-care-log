@@ -10,8 +10,7 @@
     <item name="windowSplashScreenBackground">@color/splashscreen_background</item>
     <item name="postSplashScreenTheme">@style/AppTheme</item>
     <item name="android:windowSplashScreenBehavior">icon_preferred</item>
-    <item name="windowSplashScreenAnimatedIcon">@drawable/aquariumlog_splash_empty</item>
-    <item name="android:windowBackground">@color/splashscreen_background</item>
+    <item name="windowSplashScreenAnimatedIcon">@drawable/splashscreen_logo</item>
     <item name="android:windowLightStatusBar">false</item>
     <item name="android:windowLightNavigationBar">false</item>
     <item name="android:statusBarColor">@color/splashscreen_background</item>

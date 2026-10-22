@@ -4,11 +4,21 @@ import {
   type Aquarium,
   type Snapshot,
   type EntryDraft,
+  type SavedReport,
+  type AquariumPhoto,
+  reportSchema,
   PAGE_SIZE,
   aquariumSchema,
   entrySchema,
   validateSnapshot,
 } from '../domain/models';
+
+function latestPhotoQuery(aquariumId: '?' | 'r.id') {
+  return `SELECT json_object('entryId',e.id,'activity',json_extract(e.body,'$.activity'),
+    'occurredAt',e.occurred_at,'photo',json(a.value)) body
+    FROM entries e,json_each(e.body,'$.attachments') a WHERE e.aquarium_id=${aquariumId}
+    ORDER BY e.occurred_at DESC,e.id DESC,CAST(a.key AS INTEGER) ASC LIMIT 1`;
+}
 
 export const schemaV1 = `
 CREATE TABLE aquariums (id TEXT PRIMARY KEY, body TEXT NOT NULL CHECK(json_valid(body)));
@@ -24,14 +34,19 @@ export async function migrate(db: SqlConnection): Promise<void> {
   const version =
     (await db.all<{ user_version: number }>('PRAGMA user_version'))[0]
       ?.user_version ?? 0;
-  if (version > 1)
+  if (version > 2)
     throw new Error(
       'Die Datenbank stammt aus einer neueren AquariumLog-Version.',
     );
-  if (version === 1) return;
+  if (version === 2) return;
   await db.exec('BEGIN IMMEDIATE');
   try {
-    await db.exec(schemaV1);
+    if (version === 0) await db.exec(schemaV1);
+    await db.exec(`
+      CREATE TABLE reports (id TEXT PRIMARY KEY, aquarium_id TEXT NOT NULL REFERENCES aquariums(id) ON DELETE CASCADE, entry_id TEXT REFERENCES entries(id) ON DELETE CASCADE, body TEXT NOT NULL CHECK(json_valid(body)));
+      CREATE INDEX reports_scope ON reports(aquarium_id,entry_id,json_extract(body,'$.createdAt') DESC,id DESC);
+      PRAGMA user_version=2;
+    `);
     await db.exec('COMMIT');
   } catch (error) {
     await db.exec('ROLLBACK');
@@ -44,7 +59,7 @@ export class SqlRepository implements Repository {
   private async bodies<T>(
     table: string,
     where = '',
-    params: (string | number)[] = [],
+    params: (string | number | null)[] = [],
   ): Promise<T[]> {
     return (
       await this.db.all<{ body: string }>(
@@ -87,8 +102,10 @@ export class SqlRepository implements Repository {
         body: string;
         latest: string | null;
         lastEdited: string;
+        photo: string | null;
       }>(`
         SELECT r.body,
+          (${latestPhotoQuery('r.id')}) photo,
           (SELECT e.body FROM entries e WHERE e.aquarium_id=r.id ORDER BY e.occurred_at DESC,e.id DESC LIMIT 1) latest,
           max(json_extract(r.body,'$.updatedAt'),coalesce((SELECT max(json_extract(e.body,'$.updatedAt')) FROM entries e WHERE e.aquarium_id=r.id),json_extract(r.body,'$.updatedAt'))) lastEdited
         FROM aquariums r ORDER BY lastEdited DESC,r.id ASC`);
@@ -96,7 +113,16 @@ export class SqlRepository implements Repository {
         aquarium: JSON.parse(row.body) as Aquarium,
         latest: row.latest ? (JSON.parse(row.latest) as CareEntry) : null,
         lastEdited: row.lastEdited,
+        photo: row.photo ? (JSON.parse(row.photo) as AquariumPhoto) : null,
       }));
+    });
+  }
+  latestPhoto(aquariumId: string): Promise<AquariumPhoto | null> {
+    return this.queue.run(async () => {
+      const row = (
+        await this.db.all<{ body: string }>(latestPhotoQuery('?'), aquariumId)
+      )[0];
+      return row ? (JSON.parse(row.body) as AquariumPhoto) : null;
     });
   }
   entries(aquariumId: string, search = '', offset = 0, limit = PAGE_SIZE) {
@@ -129,6 +155,65 @@ export class SqlRepository implements Repository {
       return rows[0] ?? null;
     });
   }
+  reportPage(request: {
+    aquariumId: string;
+    entryId: string | null;
+    offset: number;
+  }) {
+    return this.queue.run(async () => {
+      const clause = 'WHERE aquarium_id=? AND entry_id IS ?';
+      const params = [request.aquariumId, request.entryId];
+      const total =
+        (
+          await this.db.all<{ n: number }>(
+            `SELECT count(*) n FROM reports ${clause}`,
+            ...params,
+          )
+        )[0]?.n ?? 0;
+      const lastOffset = Math.max(
+        0,
+        Math.floor((total - 1) / PAGE_SIZE) * PAGE_SIZE,
+      );
+      const offset = Math.min(
+        lastOffset,
+        Math.max(0, Math.floor(request.offset / PAGE_SIZE) * PAGE_SIZE),
+      );
+      const rows = await this.bodies<SavedReport>(
+        'reports',
+        `${clause} ORDER BY json_extract(body,'$.createdAt') DESC, json_extract(body,'$.groupId') DESC, json_extract(body,'$.partIndex') ASC, id DESC LIMIT ? OFFSET ?`,
+        [...params, PAGE_SIZE, offset],
+      );
+      return { rows, total, offset };
+    });
+  }
+  private async putReport(report: SavedReport) {
+    const r = reportSchema.parse(report);
+    if (r.entryId) {
+      const step = (
+        await this.db.all<{ aquarium_id: string }>(
+          'SELECT aquarium_id FROM entries WHERE id=?',
+          r.entryId,
+        )
+      )[0];
+      if (step?.aquarium_id !== r.aquariumId)
+        throw new Error('Ungültige Pflegeeintragszuordnung im Protokoll.');
+    }
+    await this.db.run(
+      'INSERT INTO reports VALUES (?,?,?,?)',
+      r.id,
+      r.aquariumId,
+      r.entryId,
+      JSON.stringify(r),
+    );
+  }
+  saveReports(reports: SavedReport[]) {
+    return this.write(async () => {
+      for (const report of reports) await this.putReport(report);
+    });
+  }
+  deleteReport(id: string) {
+    return this.write(() => this.db.run('DELETE FROM reports WHERE id=?', id));
+  }
   drafts() {
     return this.queue.run(() => this.bodies<EntryDraft>('drafts'));
   }
@@ -137,6 +222,7 @@ export class SqlRepository implements Repository {
       validateSnapshot({
         aquariums: await this.bodies('aquariums'),
         entries: await this.bodies('entries'),
+        reports: await this.bodies('reports'),
         activities: (
           await this.db.all<{ name: string }>(
             'SELECT name FROM activities ORDER BY name',
@@ -210,21 +296,27 @@ export class SqlRepository implements Repository {
   deleteEntry(id: string) {
     return this.write(() => this.db.run('DELETE FROM entries WHERE id=?', id));
   }
-  replace(input: Snapshot) {
+  replace(input: Snapshot, preservedDrafts?: EntryDraft[]) {
     const data = validateSnapshot(input);
     return this.write(async () => {
-      const drafts = await this.bodies<EntryDraft>('drafts');
+      const drafts =
+        preservedDrafts ?? (await this.bodies<EntryDraft>('drafts'));
       await this.db.exec(
-        'DELETE FROM drafts; DELETE FROM entries; DELETE FROM aquariums; DELETE FROM activities;',
+        'DELETE FROM reports; DELETE FROM drafts; DELETE FROM entries; DELETE FROM aquariums; DELETE FROM activities;',
       );
       for (const r of data.aquariums) await this.putAquarium(r);
       for (const e of data.entries) await this.putEntry(e);
+      for (const r of data.reports) await this.putReport(r);
       for (const a of data.activities)
         await this.db.run('INSERT OR IGNORE INTO activities VALUES (?)', a);
       for (const draft of drafts)
         if (
           data.aquariums.some((r) => r.id === draft.aquariumId) &&
-          (!draft.entryId || data.entries.some((e) => e.id === draft.entryId))
+          (!draft.entryId ||
+            data.entries.some(
+              (e) =>
+                e.id === draft.entryId && e.aquariumId === draft.aquariumId,
+            ))
         )
           await this.db.run(
             'INSERT INTO drafts VALUES (?,?,?,?)',

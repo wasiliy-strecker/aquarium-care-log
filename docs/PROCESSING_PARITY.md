@@ -25,10 +25,18 @@ Intervallen und Zustellarten. Keine Empfehlungen und keine automatische Bewertun
 von Wasserwerten. Backups erhalten die Verschlüsselung und Zusammenführungslogik
 mit eigenen App-Kennungen. Formularentwürfe gehören nicht zum Backup.
 
-PDF, Dokumentenscanner, ML-Kit-Scannerabhängigkeit und entsprechende Beispielassets,
-Routen, native Klassen und Tests werden nicht übernommen. Backup-JPEG-Prüfung und
-privater Backup-Dateizugriff sind vom bisherigen PDF-Code gelöst.
+Der Abgleich vom 22. Oktober 2026 übernimmt die app-lokalen PDF-, Backup-,
+Erinnerungs- und Oberflächenbausteine aus ModellbauLog, Stand `f996c87`.
+Die Aquarium-Fachregeln, eigenen Kennungen, Benachrichtigungskanäle und
+Petrol-/Türkisfarben bleiben erhalten. Dokumentenscanner, OCR, Modelltypen
+und Mehrsprachigkeit werden nicht übernommen.
+
+Die Datenschutztexte folgen MaschinenLog. Nur App-Name, Felder und tatsächlich
+vorhandene Funktionen wurden angepasst. Die Fotobeispiele sind eigene generierte
+Aquarienbilder. Sie gehören weder zu Nutzerdaten noch zu Backups.
 
 Keine Datenmigration aus Hausakte oder Pflanzenbuch. AquariumLog beginnt mit eigener
-Datenbank und eigenen Android-Kennungen. Kein Store-Build, Push oder Geräteupdate
-ist Teil dieser ersten Programmieraufgabe.
+Datenbank und eigenen Android-Kennungen. Das bisherige AquariumLog-Schema 1
+wird auf Schema 2 mit gespeicherten PDF-Protokollen migriert.
+Vorhandene Einträge und Entwürfe bleiben erhalten. Unbekannte frühere
+Aquariumangaben und UTC-Versätze werden nicht rückwirkend ergänzt.

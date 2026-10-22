@@ -3,7 +3,8 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Body, Card, useTheme } from '../../core/ui/components';
 import { Icon } from '../../core/ui/icon';
-import { dateTime, type HistoryItem } from './presentation-model';
+import { type HistoryItem } from './presentation-model';
+import { entryDateTime } from '../../core/domain/capture-data';
 
 export function HistoryTile({ item }: { item: HistoryItem }) {
   const c = useTheme();
@@ -21,7 +22,7 @@ export function HistoryTile({ item }: { item: HistoryItem }) {
     >
       <View
         style={[s.dateBadge, { backgroundColor: dateAccent + '24' }]}
-        accessibilityLabel={`Dokumentiert am ${dateTime(entry.occurredAt)} Uhr`}
+        accessibilityLabel={`Dokumentiert am ${entryDateTime(entry)} Uhr`}
       >
         <Icon name="calendar_month_outlined" size={17} />
         <Text
@@ -29,7 +30,7 @@ export function HistoryTile({ item }: { item: HistoryItem }) {
           ellipsizeMode="tail"
           style={[s.date, { color: c.ink }]}
         >
-          Dokumentiert · {dateTime(entry.occurredAt)} Uhr
+          Dokumentiert · {entryDateTime(entry)} Uhr
         </Text>
       </View>
       <View style={s.row}>

@@ -3,6 +3,8 @@ import type {
   CareEntry,
   Snapshot,
   EntryDraft,
+  SavedReport,
+  AquariumPhoto,
 } from './domain/models';
 export interface SqlConnection {
   exec(sql: string): Promise<void>;
@@ -10,11 +12,24 @@ export interface SqlConnection {
   all<T>(sql: string, ...params: (string | number | null)[]): Promise<T[]>;
 }
 export interface Repository {
+  reportPage(request: {
+    aquariumId: string;
+    entryId: string | null;
+    offset: number;
+  }): Promise<{ rows: SavedReport[]; total: number; offset: number }>;
+  saveReports(reports: SavedReport[]): Promise<void>;
+  deleteReport(id: string): Promise<void>;
+  latestPhoto(aquariumId: string): Promise<AquariumPhoto | null>;
   snapshot(): Promise<Snapshot>;
   aquariums(): Promise<Aquarium[]>;
   entry(id: string): Promise<CareEntry | null>;
   dashboard(): Promise<
-    { aquarium: Aquarium; latest: CareEntry | null; lastEdited: string }[]
+    {
+      aquarium: Aquarium;
+      latest: CareEntry | null;
+      lastEdited: string;
+      photo: AquariumPhoto | null;
+    }[]
   >;
   entries(
     aquariumId: string,
@@ -30,11 +45,11 @@ export interface Repository {
   saveEntry(entry: CareEntry, draftId: string): Promise<void>;
   deleteAquarium(id: string): Promise<void>;
   deleteEntry(id: string): Promise<void>;
-  replace(data: Snapshot): Promise<void>;
+  replace(data: Snapshot, drafts?: EntryDraft[]): Promise<void>;
 }
 export interface FileVault {
   read(key: string): Promise<Uint8Array>;
-  put(bytes: Uint8Array, extension: 'jpg'): Promise<string>;
+  put(bytes: Uint8Array, extension?: 'jpg' | 'pdf'): Promise<string>;
   remove(key: string): Promise<void>;
   list(): Promise<string[]>;
   uri(key: string): string;

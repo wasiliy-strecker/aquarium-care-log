@@ -1,0 +1,71 @@
+import java.security.KeyStore
+import java.security.MessageDigest
+
+// The override supports checking missing-key behavior without touching real keys.
+def propertiesPath = providers.gradleProperty('aquariumlogStorePropertiesFile')
+    .getOrElse(rootProject.file('key.properties').absolutePath)
+def storePropertiesFile = file(propertiesPath)
+def storeProperties = new Properties()
+if (storePropertiesFile.isFile()) {
+    storePropertiesFile.withInputStream { storeProperties.load(it) }
+    if (['storeFile', 'storePassword', 'keyAlias', 'keyPassword'].any {
+        !storeProperties.getProperty(it)?.trim()
+    }) {
+        throw new GradleException('AquariumLog: incomplete private Store signing configuration.')
+    }
+    def uploadKeystore = file(storeProperties.getProperty('storeFile'))
+    if (!uploadKeystore.isFile()) {
+        throw new GradleException('AquariumLog: private Store upload keystore missing.')
+    }
+    android.signingConfigs.create('store') {
+        storeFile uploadKeystore
+        storePassword storeProperties.getProperty('storePassword')
+        keyAlias storeProperties.getProperty('keyAlias')
+        keyPassword storeProperties.getProperty('keyPassword')
+        storeType 'PKCS12'
+    }
+    android.productFlavors.getByName('store').signingConfig = android.signingConfigs.getByName('store')
+}
+
+def verifyStoreSigning = tasks.register('verifyStoreSigning') {
+    group = 'verification'
+    description = 'Validate the private Store key without building a Store artifact.'
+    doLast {
+        if (!storePropertiesFile.isFile()) {
+            throw new GradleException('AquariumLog: Store signing requires private android/key.properties. See docs/ANDROID_RELEASES.md.')
+        }
+        def signing = android.productFlavors.getByName('store').signingConfig
+        if (signing == null || signing == android.signingConfigs.getByName('debug')) {
+            throw new GradleException('AquariumLog: Store must use its own upload key.')
+        }
+        def keyStore = KeyStore.getInstance('PKCS12')
+        signing.storeFile.withInputStream { keyStore.load(it, signing.storePassword.toCharArray()) }
+        if (!keyStore.isKeyEntry(signing.keyAlias) ||
+            keyStore.getKey(signing.keyAlias, signing.keyPassword.toCharArray()) == null) {
+            throw new GradleException('AquariumLog: private Store key is not accessible.')
+        }
+        def certificate = keyStore.getCertificate(signing.keyAlias)
+        certificate.checkValidity()
+        def debug = android.signingConfigs.getByName('debug')
+        if (signing.storeFile.canonicalFile == debug.storeFile.canonicalFile) {
+            throw new GradleException('AquariumLog: Store cannot use the Dev keystore.')
+        }
+        if (debug.storeFile.isFile()) {
+            def debugStore = KeyStore.getInstance(debug.storeType ?: KeyStore.getDefaultType())
+            debug.storeFile.withInputStream { debugStore.load(it, debug.storePassword.toCharArray()) }
+            if (certificate == debugStore.getCertificate(debug.keyAlias)) {
+                throw new GradleException('AquariumLog: Store cannot reuse the Dev certificate.')
+            }
+        }
+        def fingerprint = MessageDigest.getInstance('SHA-256').digest(certificate.encoded).encodeHex()
+        logger.lifecycle("AquariumLog Store signing verified. Public certificate SHA-256: ${fingerprint}")
+    }
+}
+
+// Guard the actual packaging tasks, including aggregate/abbreviated invocations.
+// Dev builds, dependency inspection and manifest checks work without a Store key.
+tasks.configureEach { task ->
+    if (task.name ==~ /(?:assemble|bundle|package|sign|validateSigning)StoreRelease.*/) {
+        task.dependsOn(verifyStoreSigning)
+    }
+}

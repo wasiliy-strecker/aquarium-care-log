@@ -19,7 +19,7 @@ export async function verifiedFile(
     (item.size !== undefined && bytes.length !== item.size)
   )
     throw new Error(
-      'Ein Anhang wurde unerwartet verändert. Das Backup wurde nicht erstellt.',
+      'Ein Anhang wurde unerwartet verändert. Die Datei konnte nicht verarbeitet werden.',
     );
   return bytes;
 }

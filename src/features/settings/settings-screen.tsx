@@ -22,6 +22,7 @@ import {
 import { Icon } from '../../core/ui/icon';
 import { DialogActions } from '../../core/ui/dialog-actions';
 import { useSettings } from './use-settings';
+import { overlayFrameStyle } from '../../core/ui/overlay-frame';
 function PasswordDialog({
   confirm,
   close,
@@ -74,6 +75,7 @@ function PasswordDialog({
         <View
           accessibilityViewIsModal
           style={{
+            ...overlayFrameStyle(c.primary),
             backgroundColor: c.card,
             borderRadius: 28,
             padding: 24,
@@ -194,7 +196,7 @@ export function SettingsScreen() {
               <Body style={{ fontSize: 16 }}>
                 Verschlüsseltes Backup erstellen
               </Body>
-              <Body muted>Aquarien, Pflegeeinträge und Fotos</Body>
+              <Body muted>Aquarien, Pflegeeinträge, Fotos und PDFs</Body>
             </View>
             <Icon name="chevron_right" />
           </Pressable>
@@ -224,8 +226,9 @@ export function SettingsScreen() {
         </View>
         <Card style={{ padding: 18, gap: 0 }}>
           <Body>
-            Fotos und Pflegeeinträge werden lokal auf deinem Gerät verarbeitet.
-            Die App überträgt deine Aquariendaten nicht an einen Server.
+            Aquariendaten, Fotos, Pflegeeinträge, Messwerte und PDFs werden
+            lokal auf deinem Gerät verarbeitet. Die App überträgt deine
+            Aquariendaten nicht an einen Server.
           </Body>
           <Body style={{ marginTop: 10 }}>
             Deine Daten bleiben lokal auf deinem Gerät gespeichert, bis du sie
@@ -238,7 +241,7 @@ export function SettingsScreen() {
           <View style={{ marginTop: 14 }}>
             <Button
               secondary
-              icon="lock_outline"
+              icon="open_in_new"
               title="Datenschutzerklärung öffnen"
               disabled={vm.busy}
               onPress={() => void vm.openPrivacy()}

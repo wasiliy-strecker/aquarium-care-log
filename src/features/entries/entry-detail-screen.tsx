@@ -1,3 +1,9 @@
+import { Reports } from '../pdf/reports';
+import {
+  captureDifferences,
+  entryDateTime,
+} from '../../core/domain/capture-data';
+import { messages } from '../../core/texts';
 import { View, Text } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import {
@@ -71,12 +77,29 @@ export function EntryDetailScreen() {
       <Notice error text={vm.error} />
       <Card>
         <Body strong>Eintragsinformationen</Body>
-        <Body>{dateTime(e.occurredAt)}</Body>
+        <Body>{entryDateTime(e, true)}</Body>
         {!!e.note && <Body>{e.note}</Body>}
         <Body muted style={{ fontSize: 12 }}>
           Zuletzt bearbeitet: {dateTime(e.updatedAt)}
         </Body>
+        {e.timezoneOffsetMinutes == null && (
+          <Body muted>{messages.reportContent.unknownZone}</Body>
+        )}
+        {!e.aquariumAtCapture && (
+          <Body muted>{messages.reportContent.unknownCapture}</Body>
+        )}
+        {vm.aquarium &&
+          captureDifferences(e, vm.aquarium).map(([label, value]) => (
+            <Body key={label}>
+              {label} bei Erfassung: {value}
+            </Body>
+          ))}
       </Card>
+      <Reports
+        aquariumId={e.aquariumId}
+        entryId={id}
+        hasPhotos={!!photos.length}
+      />
     </Page>
   );
 }

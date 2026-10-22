@@ -1,3 +1,6 @@
+import { useRef } from 'react';
+import { FormErrorScroll } from '../../core/ui/form-error-scroll';
+import { PhotoExamplesButton } from './photo-examples-button';
 import { ActivityField } from './activity-field';
 import { PhotoHints } from '../media/photo-hints';
 import { View } from 'react-native';
@@ -22,6 +25,7 @@ export function EntryEditorScreen() {
     entryId?: string;
   }>();
   const vm = useEntryEditor(aquariumId, entryId);
+  const anchors = useRef<Record<string, View | null>>({});
   const draft = vm.draft;
   if (!draft)
     return (
@@ -44,6 +48,7 @@ export function EntryEditorScreen() {
       <Stack.Screen
         options={{ title: entryId ? 'Eintrag bearbeiten' : 'Eintrag erfassen' }}
       />
+      <FormErrorScroll target={vm.errorTarget} anchors={anchors} />
       <Notice error text={vm.error} />
       <Notice text={vm.notice} />
       {vm.phase === 'choose' ? (
@@ -67,6 +72,7 @@ export function EntryEditorScreen() {
             </Body>
           </Card>
           <PhotoHints disabled={vm.busy} />
+          <PhotoExamplesButton disabled={vm.busy} />
           <Button
             icon="edit_note_outlined"
             title="Ohne Foto erfassen"
@@ -90,61 +96,110 @@ export function EntryEditorScreen() {
         </>
       ) : (
         <View style={{ gap: 16 }}>
-          <ActivityField
-            value={form.activity}
-            suggestions={vm.activities}
-            disabled={vm.busy}
-            autoFocus={
-              !entryId && draft.captureSource === 'manual' && !form.activity
-            }
-            onChange={(v) => vm.change('activity', v)}
-          />
+          <View
+            collapsable={false}
+            ref={(node) => {
+              anchors.current.activity = node;
+            }}
+          >
+            <ActivityField
+              error={vm.fieldErrors.activity}
+              value={form.activity}
+              suggestions={vm.activities}
+              disabled={vm.busy}
+              autoFocus={
+                !entryId && draft.captureSource === 'manual' && !form.activity
+              }
+              onChange={(v) => vm.change('activity', v)}
+            />
+          </View>
           <View>
             <PhotoEditor photos={photos} actions={actions} />
           </View>
           <Card>
             <Body strong>Messwert (optional)</Body>
-            <SuggestionField
-              label="Bezeichnung"
-              placeholder="z. B. Temperatur oder pH-Wert"
-              helper="Eigene Messgrößen sind ebenfalls möglich."
-              value={form.measurementLabel}
-              suggestions={measurementLabels}
-              disabled={vm.busy}
-              onChange={(v) => vm.change('measurementLabel', v)}
-            />
-            <Field
-              label="Wert (optional)"
-              keyboardType="numbers-and-punctuation"
-              value={form.value}
-              onChangeText={(v) => vm.change('value', v)}
-              editable={!vm.busy}
-            />
-            <Field
-              label="Einheit (optional)"
-              placeholder="z. B. °C. Bei pH leer lassen."
-              value={form.unit}
-              onChangeText={(v) => vm.change('unit', v)}
-              editable={!vm.busy}
-            />
+            <View
+              collapsable={false}
+              ref={(node) => {
+                anchors.current.measurementLabel = node;
+              }}
+            >
+              <SuggestionField
+                error={vm.fieldErrors.measurementLabel}
+                label="Bezeichnung"
+                placeholder="z. B. Temperatur oder pH-Wert"
+                helper="Eigene Messgrößen sind ebenfalls möglich."
+                value={form.measurementLabel}
+                suggestions={measurementLabels}
+                disabled={vm.busy}
+                onChange={(v) => vm.change('measurementLabel', v)}
+              />
+            </View>
+            <View
+              collapsable={false}
+              ref={(node) => {
+                anchors.current.value = node;
+              }}
+            >
+              <Field
+                error={vm.fieldErrors.value}
+                label="Wert (optional)"
+                keyboardType="numbers-and-punctuation"
+                value={form.value}
+                onChangeText={(v) => vm.change('value', v)}
+                editable={!vm.busy}
+              />
+            </View>
+            <View
+              collapsable={false}
+              ref={(node) => {
+                anchors.current.unit = node;
+              }}
+            >
+              <Field
+                error={vm.fieldErrors.unit}
+                label="Einheit (optional)"
+                placeholder="z. B. °C. Bei pH leer lassen."
+                value={form.unit}
+                onChangeText={(v) => vm.change('unit', v)}
+                editable={!vm.busy}
+              />
+            </View>
           </Card>
           <Card>
             <Body strong>Datum und Uhrzeit</Body>
-            <DateField
-              label="Zeitpunkt des Eintrags"
-              time
-              value={form.occurredAt}
-              onChange={(v) => vm.change('occurredAt', v)}
-              disabled={vm.busy}
-            />
+            <View
+              collapsable={false}
+              ref={(node) => {
+                anchors.current.occurredAt = node;
+              }}
+            >
+              <DateField
+                timezoneOffsetMinutes={form.timezoneOffsetMinutes}
+                label="Zeitpunkt des Eintrags"
+                time
+                value={form.occurredAt}
+                onChange={(v) => vm.change('occurredAt', v)}
+                disabled={vm.busy}
+              />
+              <Notice error text={vm.fieldErrors.occurredAt} />
+            </View>
           </Card>
-          <Field
-            label="Notiz"
-            multiline
-            value={form.note}
-            onChangeText={(v) => vm.change('note', v)}
-            editable={!vm.busy}
-          />
+          <View
+            collapsable={false}
+            ref={(node) => {
+              anchors.current.note = node;
+            }}
+          >
+            <Field
+              error={vm.fieldErrors.note}
+              label="Notiz"
+              multiline
+              value={form.note}
+              onChangeText={(v) => vm.change('note', v)}
+              editable={!vm.busy}
+            />
+          </View>
           <Button
             icon={
               entryId || draft.captureSource !== 'photo'

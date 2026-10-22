@@ -1,6 +1,7 @@
 import {
   entrySchema,
   aquariumSchema,
+  aquariumAtCaptureSchema,
   snapshotFiles,
   entryForm,
   parseDecimal,
@@ -15,8 +16,9 @@ import {
   type FileVault,
   type Repository,
   type ReminderPort,
+  type PhotoValidator,
 } from '../../core/ports';
-import { digest } from '../../core/files/integrity';
+import { digest, verifiedFile } from '../../core/files/integrity';
 import { MAX_FILE_BYTES } from '../../core/files/limits';
 export class AquariumService {
   readonly queue = new SerialQueue();
@@ -25,6 +27,7 @@ export class AquariumService {
     readonly vault: FileVault,
     readonly env: Environment,
     readonly reminders: ReminderPort,
+    readonly inspector: PhotoValidator,
   ) {}
   async cleanup(candidates: string[]): Promise<void> {
     try {
@@ -74,6 +77,7 @@ export class AquariumService {
         : {
             activity: '',
             occurredAt: now,
+            timezoneOffsetMinutes: -new Date(now).getTimezoneOffset(),
             measurementLabel: '',
             value: '',
             unit: '',
@@ -96,6 +100,7 @@ export class AquariumService {
   async importPhoto(bytes: Uint8Array, name: string): Promise<Attachment> {
     if (!bytes.length || bytes.length > MAX_FILE_BYTES)
       throw new Error('Das Foto ist leer oder größer als 50 MB.');
+    await this.inspector.validate(bytes);
     const file = await this.vault.put(bytes, 'jpg');
     return {
       id: this.env.id(),
@@ -112,11 +117,34 @@ export class AquariumService {
     return this.queue.run(async () => {
       const form = draft.form;
       const value = parseDecimal(form.value);
+      const before = draft.entryId
+        ? await this.repository.entry(draft.entryId)
+        : null;
+      if (draft.entryId && !before)
+        throw new Error('Der Pflegeeintrag wurde inzwischen gelöscht.');
+      const aquarium = (await this.repository.aquariums()).find(
+        (a) => a.id === draft.aquariumId,
+      );
+      if (!aquarium) throw new Error('Aquarium nicht gefunden.');
       const entry = entrySchema.parse({
         id: draft.entryId ?? this.env.id(),
         aquariumId: draft.aquariumId,
+        aquariumAtCapture: before
+          ? (before.aquariumAtCapture ?? null)
+          : aquariumAtCaptureSchema.parse({
+              name: aquarium.name,
+              volumeLiters: aquarium.volumeLiters,
+              dimensions: aquarium.dimensions,
+              location: aquarium.location,
+            }),
+        timezoneOffsetMinutes:
+          before &&
+          Date.parse(before.occurredAt) === Date.parse(form.occurredAt)
+            ? (before.timezoneOffsetMinutes ?? null)
+            : (form.timezoneOffsetMinutes ??
+              -new Date(form.occurredAt).getTimezoneOffset()),
         activity: form.activity,
-        occurredAt: form.occurredAt,
+        occurredAt: new Date(form.occurredAt).toISOString(),
         measurement:
           value === null
             ? null
@@ -126,7 +154,8 @@ export class AquariumService {
         createdAt: draft.createdAt,
         updatedAt: this.env.now(),
       });
-      const before = await this.repository.entry(entry.id);
+      for (const photo of entry.attachments)
+        await verifiedFile(this.vault, photo);
       await this.repository.saveEntry(entry, draft.id);
       await this.cleanup(before?.attachments.map((a) => a.file) ?? []);
       return { entry, warnings: await this.syncReminders() };
@@ -138,7 +167,7 @@ export class AquariumService {
       await this.cleanup(draft.form.attachments.map((a) => a.file));
     });
   }
-  delete(kind: 'aquarium' | 'entry', id: string): Promise<string[]> {
+  delete(kind: 'aquarium' | 'entry' | 'report', id: string): Promise<string[]> {
     return this.queue.run(async () => {
       const candidates = snapshotFiles(await this.repository.snapshot());
       candidates.push(
@@ -147,7 +176,8 @@ export class AquariumService {
         ),
       );
       if (kind === 'aquarium') await this.repository.deleteAquarium(id);
-      else await this.repository.deleteEntry(id);
+      else if (kind === 'entry') await this.repository.deleteEntry(id);
+      else await this.repository.deleteReport(id);
       await this.cleanup(candidates);
       return this.syncReminders();
     });

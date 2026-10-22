@@ -15,25 +15,35 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [24, 25, 35], application = Application::class)
 class ReminderSettingsTest {
-    @Test fun opensAnAvailableSettingsPageForTheCurrentAndroidVersion() {
+    @Test fun opensPlatformSettingsWithFallbacksAndPreservesChannelIds() {
         val context = RuntimeEnvironment.getApplication()
-        for (exact in listOf(false, true)) {
-            val intent = reminderSettingsIntent(context, exact)
-            assertTrue(intent.flags and Intent.FLAG_ACTIVITY_NEW_TASK != 0)
-            when {
-                exact && Build.VERSION.SDK_INT >= 31 -> {
-                    assertEquals(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, intent.action)
-                    assertEquals(Uri.parse("package:${context.packageName}"), intent.data)
-                }
-                Build.VERSION.SDK_INT >= 26 -> {
-                    assertEquals(Settings.ACTION_APP_NOTIFICATION_SETTINGS, intent.action)
-                    assertEquals(context.packageName, intent.getStringExtra(Settings.EXTRA_APP_PACKAGE))
-                }
-                else -> {
-                    assertEquals(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, intent.action)
-                    assertEquals(Uri.parse("package:${context.packageName}"), intent.data)
-                }
-            }
+        val notifications = reminderSettingsIntents(context, "notifications", null)
+        assertEquals(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, notifications.last().action)
+        assertEquals(Uri.parse("package:" + context.packageName), notifications.last().data)
+        val exact = reminderSettingsIntents(context, "exact", null)
+        if (Build.VERSION.SDK_INT >= 31) {
+            assertEquals(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, exact.first().action)
+            assertEquals(Uri.parse("package:" + context.packageName), exact.first().data)
+            assertNull(exact.last().data)
         }
+        for (mode in listOf("normal", "punctualWithSound")) {
+            val intents = reminderSettingsIntents(context, "channel", mode)
+            if (Build.VERSION.SDK_INT >= 26) {
+                assertEquals(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS, intents.first().action)
+                assertEquals(ReminderNotifier.channelId(mode == "punctualWithSound"), intents.first().getStringExtra(Settings.EXTRA_CHANNEL_ID))
+                assertEquals(Settings.ACTION_APP_NOTIFICATION_SETTINGS, intents[1].action)
+            } else {
+                assertEquals(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, intents.first().action)
+            }
+            assertTrue(intents.all { it.flags and Intent.FLAG_ACTIVITY_NEW_TASK != 0 })
+        }
+    }
+
+    @Test fun quietModeSettingsFallBackToSoundWithoutRequestingPolicyAccess() {
+        val context = RuntimeEnvironment.getApplication()
+        val intents = reminderSettingsIntents(context, "doNotDisturb", null)
+        assertEquals("android.settings.ZEN_MODE_SETTINGS", intents.first().action)
+        assertEquals(Settings.ACTION_SOUND_SETTINGS, intents.last().action)
+        assertFalse(intents.any { it.action == Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS })
     }
 }

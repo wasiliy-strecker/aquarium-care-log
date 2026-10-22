@@ -9,7 +9,14 @@ Keine Runtime-Abhängigkeit auf Nachbar-Apps. Beide Vorlagen bleiben unveränder
 
 Schlanke Routen in `src/app`, View-Model-Hooks in Features, Fachregeln in Services.
 SQLite, Dateien, Fotos und Erinnerungen hinter Ports. Keine gemeinsame Bibliothek.
-Kein OCR, Scanner, PDF, Cloud, Konto, KI oder eigene Telemetrie.
+PDF-Einzel- und Pflegeverlaufsprotokolle folgen dem aktuellen ModellbauLog.
+Alle aktuellen Fotos in gespeicherter Reihenfolge berücksichtigen. Gespeicherte
+PDFs bleiben unverändert und gehören zum verschlüsselten Backup.
+Keine PDF-Importfunktion, OCR, Scanner, Cloud, Konto, KI oder eigene Telemetrie.
+Bestehende AquariumLog-Daten und `.aqbackup`-Dateien müssen lesbar bleiben.
+Neue Pflegeeinträge bewahren Aquariumangaben bei Erfassung und UTC-Versatz.
+Unbekannte historische Angaben von Altbeständen bleiben unbekannt.
+Keine Mehrsprachigkeit. Datenschutz und öffentliche Seiten folgen MaschinenLog.
 Dateien erst nach erfolgreicher Datenbankänderung und Prüfung aller Referenzen löschen.
 Entwürfe berücksichtigen. Bearbeiten erzeugt keine Revisionen.
 

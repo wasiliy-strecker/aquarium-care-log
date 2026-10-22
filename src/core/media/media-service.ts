@@ -136,7 +136,7 @@ export class ExpoMedia implements MediaPort {
     const directory = new Directory(Paths.cache, 'shared-backups');
     directory.create({ idempotent: true, intermediates: true });
     const copy = new File(directory, file.name);
-    new File(file.uri).copy(copy);
+    await new File(file.uri).copy(copy);
     await Sharing.shareAsync(copy.uri, {
       mimeType: 'application/octet-stream',
       dialogTitle: 'AquariumLog-Backup teilen',

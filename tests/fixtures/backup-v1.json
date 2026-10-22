@@ -1,0 +1,41 @@
+{
+  "aquariums": [
+    {
+      "id": "4791f912-515d-4a09-8df9-60c26cd53afa",
+      "name": "Wohnzimmer",
+      "volumeLiters": 180,
+      "dimensions": "100 × 40 × 50 cm",
+      "location": "Wohnzimmer",
+      "reminder": null,
+      "createdAt": "2026-10-22T18:28:29.252Z",
+      "updatedAt": "2026-10-22T18:28:29.252Z"
+    }
+  ],
+  "entries": [
+    {
+      "id": "6908838b-6e57-493e-adf2-55de936749af",
+      "aquariumId": "4791f912-515d-4a09-8df9-60c26cd53afa",
+      "activity": "Wasserwechsel",
+      "occurredAt": "2026-10-22T18:28:29.266Z",
+      "measurement": {
+        "label": "Temperatur",
+        "value": 24.5,
+        "unit": "°C"
+      },
+      "note": "",
+      "attachments": [
+        {
+          "id": "c617d4dd-6abb-4fbe-9604-feb1d73f61ba",
+          "kind": "photo",
+          "name": "Test.jpg",
+          "file": "5aab923d-1f26-4023-a768-86d0dd9c3037.jpg",
+          "sha256": "c72172264f9743301ba3c2cddd3bc138ed71ad4a0dbf5726e7e5644adda0d4ad",
+          "size": 5783
+        }
+      ],
+      "createdAt": "2026-10-22T18:28:29.266Z",
+      "updatedAt": "2026-10-22T18:28:29.286Z"
+    }
+  ],
+  "activities": ["Wasserwechsel"]
+}

@@ -97,6 +97,8 @@ internal object ReminderScheduler {
     )
 
     fun rescheduleAll(context: Context, clockChanged: Boolean = false) {
+        ReminderStore.statusIds(context).filter { ReminderStore.planningState(context, it) == "cancelFailed" }
+            .forEach { cancel(context, it) }
         ReminderStore.all(context).forEach { reminder ->
             if (clockChanged) {
                 scheduleNext(context, reminder)
@@ -150,6 +152,7 @@ internal enum class ReminderAvailability(val wireValue: String) {
 }
 
 internal object ReminderNotifier {
+    private val notificationColor = Color.rgb(23, 107, 117)
     private const val normalChannelId = "aquariumlog_reminders"
     private const val alarmChannelId = "aquariumlog_alarm_reminders_v1"
     private const val aquariumNotificationId = 1001
@@ -226,19 +229,19 @@ internal object ReminderNotifier {
         val latestReading = if (
             !reminder.latestValue.isNullOrBlank()
         ) {
-            "Letzter Eintrag: ${reminder.latestValue} ${reminder.latestUnit.orEmpty()}".trim()
+            "Letzte Pflege: ${reminder.latestValue}".trim()
         } else {
-            "Noch kein Eintrag"
+            "Noch kein Pflegeeintrag"
         }
         val summary = "${reminder.categoryLabel} · $latestReading"
         val notification = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(notificationIcon())
-            .setColor(notificationColor())
+            .setSmallIcon(R.drawable.ic_stat_aquarium)
+            .setColor(notificationColor)
             .setContentTitle("${reminder.categoryLabel} · ${reminder.label}")
             .setContentText(summary)
             .setStyle(
                 NotificationCompat.BigTextStyle().bigText(
-                    "$latestReading\nJetzt einen Pflegeeintrag in AquariumLog festhalten.",
+                    "$latestReading\nHalte deinen nächsten Pflegeeintrag in AquariumLog fest.",
                 ),
             )
             .apply { configureLegacySound(this, reminder.isPunctual) }
@@ -256,9 +259,6 @@ internal object ReminderNotifier {
         )
         return postedAt
     }
-
-    private fun notificationIcon(): Int = R.drawable.ic_stat_aquarium
-    private fun notificationColor(): Int = Color.rgb(23, 107, 117)
 
     fun migrateLegacyNotification(context: Context, reminder: StoredReminder) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
@@ -281,7 +281,6 @@ internal object ReminderNotifier {
         context: Context,
         aquariumId: String?,
         label: String,
-        category: String,
         categoryLabel: String,
         latestValue: String?,
         latestUnit: String?,
@@ -290,17 +289,17 @@ internal object ReminderNotifier {
         val availability = availability(context, punctual)
         if (availability != ReminderAvailability.AVAILABLE) return availability.wireValue
         val latestReading = if (!latestValue.isNullOrBlank()) {
-            "Letzter Eintrag: $latestValue ${latestUnit.orEmpty()}".trim()
+            "Letzte Pflege: $latestValue".trim()
         } else {
-            "Noch kein Eintrag"
+            "Noch kein Pflegeeintrag"
         }
         val target = if (aquariumId.isNullOrBlank()) "die App" else "das Aquarium"
         val notification = NotificationCompat.Builder(
             context,
             channelId(punctual),
         )
-            .setSmallIcon(notificationIcon())
-            .setColor(notificationColor())
+            .setSmallIcon(R.drawable.ic_stat_aquarium)
+            .setColor(notificationColor)
             .setContentTitle("Test: $categoryLabel · $label")
             .setContentText(latestReading)
             .setStyle(
@@ -389,10 +388,10 @@ internal object ReminderNotifier {
         val manager = context.getSystemService(NotificationManager::class.java)
         val normal = NotificationChannel(
             normalChannelId,
-            "AquariumLog-Erinnerungen",
+            "Normal",
             NotificationManager.IMPORTANCE_HIGH,
         ).apply {
-            description = "Optionale Erinnerungen für regelmäßige Einträge."
+            description = "Optionale Erinnerungen zur Aquarienpflege."
             enableVibration(true)
             setSound(
                 RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
@@ -406,10 +405,10 @@ internal object ReminderNotifier {
             ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
         val alarm = NotificationChannel(
             alarmChannelId,
-            "Pünktliche AquariumLog-Erinnerungen",
+            "Pünktlich mit Ton",
             NotificationManager.IMPORTANCE_HIGH,
         ).apply {
-            description = "Pünktliche AquariumLog-Erinnerungen mit Alarmton."
+            description = "Pünktliche Erinnerungen zur Aquarienpflege mit Alarmton."
             enableVibration(true)
             setSound(
                 alarmSound,

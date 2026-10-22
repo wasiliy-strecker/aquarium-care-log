@@ -1,6 +1,7 @@
 package com.appfactory.aquariumlog.nativecore
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import java.io.File
@@ -27,8 +28,8 @@ internal fun validatePhoto(file: File) {
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
     BitmapFactory.decodeFile(file.path, bounds)
     require(bounds.outMimeType == "image/jpeg" && bounds.outWidth in 1..1920 && bounds.outHeight in 1..1920) {
-        "Das Foto ist nicht lesbar oder überschreitet 1920 Pixel."
+        "Das Foto ist kein lesbares JPEG mit höchstens 1920 Pixeln."
     }
-    val bitmap = requireNotNull(BitmapFactory.decodeFile(file.path)) { "Das Foto ist nicht lesbar." }
-    bitmap.recycle()
+    val bitmap = BitmapFactory.decodeFile(file.path, BitmapFactory.Options().apply { inPreferredConfig = Bitmap.Config.RGB_565 })
+    requireNotNull(bitmap) { "Das Foto konnte nicht gelesen werden." }.recycle()
 }

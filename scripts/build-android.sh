@@ -12,11 +12,18 @@ export ANDROID_HOME="${ANDROID_HOME:-$HOME/.local/android-sdk}"
 if [ -z "${JAVA_HOME:-}" ] && [ -x "$HOME/.local/jdk-21/bin/javac" ]; then
   export JAVA_HOME="$HOME/.local/jdk-21"
 fi
-if [ ! -f android/app/debug.keystore ]; then
-  mkdir -p android/app
-  keytool_bin="${JAVA_HOME:+$JAVA_HOME/bin/}keytool"
-  "$keytool_bin" -genkeypair -keystore android/app/debug.keystore -storepass android -keypass android -alias androiddebugkey -dname 'CN=AquariumLog Local Development' -keyalg RSA -keysize 2048 -validity 10000 -noprompt
+# Expo SDK 57 recreates android/ by default. Keep the signing key outside it.
+mkdir -p .local
+if [ ! -f .local/dev.keystore ] && [ -f android/app/debug.keystore ]; then
+  cp android/app/debug.keystore .local/dev.keystore
+  chmod 600 .local/dev.keystore
 fi
-npx expo prebuild --platform android --no-install
+if [ ! -f .local/dev.keystore ]; then
+  keytool_bin="${JAVA_HOME:+$JAVA_HOME/bin/}keytool"
+  "$keytool_bin" -genkeypair -keystore .local/dev.keystore -storepass android -keypass android -alias androiddebugkey -dname 'CN=AquariumLog Local Development' -keyalg RSA -keysize 2048 -validity 10000 -noprompt
+fi
+npx expo prebuild --platform android --no-install --no-clean
+cp .local/dev.keystore android/app/debug.keystore
+chmod 600 .local/dev.keystore android/app/debug.keystore
 cd android
-./gradlew :app:"$task" -PreactNativeArchitectures=arm64-v8a,x86_64 --max-workers=4 "$@"
+./gradlew :app:"$task" -PreactNativeArchitectures="${AQUARIUMLOG_ANDROID_ARCHITECTURES:-arm64-v8a}" --no-daemon --max-workers=4 "$@"

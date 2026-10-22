@@ -105,6 +105,10 @@ function Routes() {
           options={{ title: 'Eintrag erfassen' }}
         />
         <Stack.Screen name="entry/[id]" options={{ title: 'Eintrag' }} />
+        <Stack.Screen
+          name="pdf/[id]"
+          options={{ title: 'Aquariumpflegeprotokoll' }}
+        />
         <Stack.Screen name="settings" options={{ title: 'Einstellungen' }} />
       </Stack>
     </NavigationThemeProvider>

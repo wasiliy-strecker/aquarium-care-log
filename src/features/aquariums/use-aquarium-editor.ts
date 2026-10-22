@@ -7,15 +7,27 @@ import {
   numberInput,
   parseDecimal,
   type AquariumForm,
-  type Reminder,
 } from '../../core/domain/models';
 import { useTask } from '../../core/ui/use-task';
 import { errorText } from '../../core/ui/components';
 import { useFeedback } from '../../core/ui/feedback';
 import { useLeaveGuard } from '../../core/ui/use-leave-guard';
+import { useFormErrors } from '../../core/ui/use-form-errors';
+import {
+  validateAquariumForm,
+  aquariumFieldOrder,
+} from './aquarium-form-validation';
+import { useReminderStatusSnapshot } from './use-reminder-status';
+import {
+  needsReminderRepair,
+  reminderSchedule,
+  reminderSaveWarning,
+} from './reminder-model';
 export function useAquariumEditor(id?: string) {
   const { aquariumService, refresh, native } = useServices();
   const feedback = useFeedback();
+  const formErrors = useFormErrors();
+  const reminderState = useReminderStatusSnapshot();
   const [aquarium, setAquarium] = useState<AquariumForm | undefined>(() => {
     if (id) return;
     const now = aquariumService.env.now();
@@ -68,46 +80,34 @@ export function useAquariumEditor(id?: string) {
     key: K,
     value: AquariumForm[K],
   ) {
+    formErrors.clear(key);
     setAquarium((current) => current && { ...current, [key]: value });
   }
   return {
     aquarium,
+    fieldErrors: formErrors.fieldErrors,
+    errorTarget: formErrors.errorTarget,
+    reminderStatus: reminderState.status,
+    refreshReminderStatus: reminderState.refresh,
+    reminderNeedsRepair:
+      !!id &&
+      reminderState.loaded &&
+      needsReminderRepair(
+        aquarium?.reminder ?? null,
+        reminderSchedule(reminderState.status, id),
+      ),
     dirty,
     change,
     ...task,
-    reminder: (value: Partial<Reminder>) => {
-      if (aquarium?.reminder)
-        change('reminder', { ...aquarium.reminder, ...value });
-    },
-    toggleReminder: (enabled: boolean) =>
-      change(
-        'reminder',
-        enabled
-          ? {
-              interval: 'monthly',
-              day: 1,
-              month: 1,
-              hour: 9,
-              minute: 0,
-              deliveryMode: 'normal',
-              startsAtMillis: Date.now() + 3600000,
-            }
-          : null,
-      ),
-    testReminder: (punctual: boolean) =>
-      task.run(async () => {
-        const result = await native.testReminder(punctual);
-        feedback.notify(
-          result === 'posted'
-            ? 'Test-Erinnerung gesendet. Sie verschwindet nach einer Minute.'
-            : 'Die Erinnerung ist in Android blockiert. Bitte die Benachrichtigungseinstellungen prüfen.',
-        );
-      }),
-    openReminderSettings: (exact: boolean) =>
-      task.run(() => native.openReminderSettings(exact)),
     save: () =>
       task.run(async () => {
         if (!aquarium) return;
+        const errors = validateAquariumForm(aquarium);
+        if (Object.keys(errors).length) {
+          formErrors.show(errors, aquariumFieldOrder);
+          return;
+        }
+        formErrors.clear();
         const { volume, ...fields } = aquarium;
         const saved = aquariumSchema.parse({
           ...fields,
@@ -122,6 +122,12 @@ export function useAquariumEditor(id?: string) {
             PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
           );
         const warnings = await aquariumService.saveAquarium(saved);
+        const status = await native.reminderStatus().catch(() => undefined);
+        const reminderWarning = reminderSaveWarning(
+          saved.reminder,
+          status,
+          saved.id,
+        );
         refresh();
         leave(() => {
           if (id)
@@ -136,7 +142,8 @@ export function useAquariumEditor(id?: string) {
             });
         });
         feedback.notify(
-          warnings.join('\n') ||
+          reminderWarning ||
+            warnings.join('\n') ||
             (id
               ? 'Änderungen am Aquarium gespeichert.'
               : 'Aquarium gespeichert. Als Nächstes kannst du den ersten Eintrag erfassen.'),

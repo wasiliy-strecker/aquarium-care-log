@@ -1,4 +1,9 @@
-import { View, Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Reports } from '../pdf/reports';
+import { entryDateTime } from '../../core/domain/capture-data';
+import { AquariumCover } from './aquarium-cover';
+import { ReminderScheduleStatus } from './reminder-status';
+import { View, Text, FlatList, useWindowDimensions } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import {
   Body,
@@ -25,6 +30,7 @@ import {
   reminderSummary,
   sortLabels,
   type AquariumSort,
+  type DashboardItem,
 } from './presentation-model';
 import { PAGE_SIZE, type Aquarium } from '../../core/domain/models';
 import type { ReminderStatus } from '../../core/native/aquarium-native';
@@ -38,22 +44,25 @@ export function ReminderInfo({
   const c = useTheme();
   const r = aquarium.reminder;
   const s = status?.schedules.find((s) => s.aquariumId === aquarium.id);
-  if (!r) return null;
+  if (!r && s?.planningState !== 'cancelFailed') return null;
   return (
     <View style={{ gap: 6 }}>
-      <Body strong style={{ fontSize: 12 }}>
-        Erinnern: {reminderSummary(r)}
-      </Body>
-      <Body muted style={{ fontSize: 12 }}>
-        {s?.nextTriggerAtMillis
-          ? `Nächste Erinnerung: ${dateTime(s.nextTriggerAtMillis)} Uhr`
-          : 'Erinnerung noch nicht bestätigt'}
-        {status && !status.notifications ? ' · In Android blockiert' : ''}
-        {s?.planningState && s.planningState !== 'scheduled'
-          ? ' · Planung prüfen'
-          : ''}
-        {s?.deliveryFailed ? ' · Zustellfehler' : ''}
-      </Body>
+      {r && (
+        <Body strong style={{ fontSize: 12 }}>
+          Erinnern: {reminderSummary(r)}
+        </Body>
+      )}
+      <ReminderScheduleStatus
+        reminder={r}
+        status={status}
+        aquariumId={aquarium.id}
+        onEdit={() =>
+          router.push({
+            pathname: '/aquarium/edit',
+            params: { id: aquarium.id },
+          })
+        }
+      />
       <View
         style={{
           paddingHorizontal: 10,
@@ -76,19 +85,181 @@ export function ReminderInfo({
     </View>
   );
 }
+function DashboardHeader({ vm }: { vm: ReturnType<typeof useAquariums> }) {
+  const feedback = useFeedback();
+  return (
+    <View style={{ gap: 12, paddingBottom: 12 }}>
+      {!!vm.error && (
+        <>
+          <Notice error text={vm.error} />
+          <Button title="Erneut laden" onPress={vm.retry} />
+        </>
+      )}
+      <Title subtitle="Pflege, Fotos und Wasserwerte deiner Aquarien festhalten.">
+        Deine Aquarien
+      </Title>
+      <View style={{ marginTop: 4 }}>
+        <Field
+          label="Aquarien suchen"
+          leading="search"
+          value={vm.search}
+          onChangeText={vm.setSearch}
+          trailing={vm.search ? 'close' : undefined}
+          onTrailingPress={() => vm.setSearch('')}
+          returnKeyType="search"
+        />
+      </View>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 12,
+          flexWrap: 'wrap',
+        }}
+      >
+        <Body muted>
+          {vm.items.length}{' '}
+          {vm.search
+            ? 'Treffer'
+            : vm.items.length === 1
+              ? 'Aquarium'
+              : 'Aquarien'}
+        </Body>
+        <Button
+          secondary
+          icon="sort"
+          menu
+          title={sortLabels[vm.sort]}
+          onPress={(anchor) =>
+            void feedback
+              .choose({
+                title: 'Aquarien sortieren',
+                anchor,
+                options: (Object.keys(sortLabels) as AquariumSort[]).map(
+                  (value) => ({
+                    value,
+                    label: sortLabels[value],
+                    icon: value === vm.sort ? 'check' : undefined,
+                  }),
+                ),
+              })
+              .then((value) => {
+                if (value) vm.setSort(value as AquariumSort);
+              })
+          }
+        />
+      </View>
+    </View>
+  );
+}
+function DashboardCard({
+  item,
+  hasDraft,
+  status,
+}: {
+  item: DashboardItem;
+  hasDraft: boolean;
+  status?: ReminderStatus;
+}) {
+  const c = useTheme();
+  const { aquarium, latest, lastEdited, photo } = item;
+  return (
+    <Card
+      style={{ padding: 0, gap: 0 }}
+      onPress={() =>
+        router.push({
+          pathname: '/aquarium/[id]',
+          params: { id: aquarium.id },
+        })
+      }
+    >
+      <AquariumCover photo={photo} title={aquarium.name} />
+      <View
+        style={{
+          padding: 16,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 14,
+        }}
+      >
+        <View
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            backgroundColor: c.primary + '1F',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Icon name={'water_drop'} color={c.primary} />
+          {status?.schedules.find((s) => s.aquariumId === aquarium.id)
+            ?.isNotificationActive && (
+            <View
+              style={{
+                position: 'absolute',
+                right: -2,
+                top: -4,
+                backgroundColor: c.danger,
+                borderRadius: 10,
+                paddingHorizontal: 5,
+              }}
+            >
+              <Text style={{ color: c.background, fontSize: 11 }}>1</Text>
+            </View>
+          )}
+        </View>
+        <View style={{ flex: 1, gap: 4 }}>
+          <Body strong style={{ fontSize: 16, lineHeight: 24 }}>
+            {aquarium.name}
+          </Body>
+          <Body muted>{aquariumSummary(aquarium)}</Body>
+          <Text
+            style={{
+              fontFamily: 'RobotoBlack',
+              fontSize: 22,
+              lineHeight: 28,
+              color: c.ink,
+              marginTop: 2,
+            }}
+          >
+            {entrySummary(latest)}
+          </Text>
+          <Body muted style={{ fontSize: 12, lineHeight: 16 }}>
+            Zuletzt bearbeitet: {dateTime(lastEdited)}
+          </Body>
+          {hasDraft && (
+            <Body muted style={{ fontSize: 12 }}>
+              Gesicherter Formularentwurf
+            </Body>
+          )}
+          <ReminderInfo aquarium={aquarium} status={status} />
+        </View>
+        <Icon name="chevron_right" />
+      </View>
+    </Card>
+  );
+}
+function AquariumSeparator() {
+  return <View style={{ height: 12 }} />;
+}
+const dashboardKey = (item: DashboardItem) => item.aquarium.id;
 export function AquariumsScreen() {
   const vm = useAquariums(),
     c = useTheme(),
-    feedback = useFeedback();
+    safe = useSafeAreaInsets(),
+    { fontScale } = useWindowDimensions();
   const create = () => router.push('/aquarium/edit');
   return (
     <Page
       ready={!vm.loading}
+      scroll={vm.loading || vm.empty}
       fab={<Fab title="Aquarium anlegen" onPress={create} />}
     >
       {vm.loading ? (
         <Busy label="Aquarien werden geladen …" />
-      ) : vm.error ? (
+      ) : vm.error && vm.empty ? (
         <>
           <Notice error text={vm.error} />
           <Button title="Erneut laden" onPress={vm.retry} />
@@ -113,142 +284,39 @@ export function AquariumsScreen() {
           </Body>
         </View>
       ) : (
-        <>
-          <Title subtitle="Pflege, Fotos und Wasserwerte deiner Aquarien festhalten.">
-            Deine Aquarien
-          </Title>
-          <View style={{ marginTop: 4 }}>
-            <Field
-              label="Aquarien suchen"
-              leading="search"
-              value={vm.search}
-              onChangeText={vm.setSearch}
-              trailing={vm.search ? 'close' : undefined}
-              onTrailingPress={() => vm.setSearch('')}
-              returnKeyType="search"
-            />
-          </View>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 12,
-              flexWrap: 'wrap',
-            }}
-          >
-            <Body muted>
-              {vm.items.length}{' '}
-              {vm.search
-                ? 'Treffer'
-                : vm.items.length === 1
-                  ? 'Aquarium'
-                  : 'Aquarien'}
-            </Body>
-            <Button
-              secondary
-              icon="sort"
-              menu
-              title={sortLabels[vm.sort]}
-              onPress={(anchor) =>
-                void feedback
-                  .choose({
-                    title: 'Aquarien sortieren',
-                    anchor,
-                    options: (Object.keys(sortLabels) as AquariumSort[]).map(
-                      (value) => ({
-                        value,
-                        label: sortLabels[value],
-                        icon: value === vm.sort ? 'check' : undefined,
-                      }),
-                    ),
-                  })
-                  .then((value) => {
-                    if (value) vm.setSort(value as AquariumSort);
-                  })
-              }
-            />
-          </View>
-          {!vm.items.length && (
+        <FlatList
+          style={{ flex: 1 }}
+          contentContainerStyle={{
+            paddingHorizontal: 16,
+            paddingTop: 8,
+            paddingBottom: Math.max(112, 56 * fontScale + 48) + safe.bottom,
+            width: '100%',
+            maxWidth: 800,
+            alignSelf: 'center',
+            flexGrow: 1,
+          }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          data={vm.items}
+          keyExtractor={dashboardKey}
+          ListHeaderComponent={<DashboardHeader vm={vm} />}
+          ListEmptyComponent={
             <Card>
               <Icon name="search" size={42} color={c.primary} />
               <Body>Keine passenden Aquarien gefunden.</Body>
             </Card>
+          }
+          ItemSeparatorComponent={AquariumSeparator}
+          renderItem={({ item }) => (
+            <DashboardCard
+              item={item}
+              hasDraft={vm.drafts.some(
+                (d) => d.aquariumId === item.aquarium.id,
+              )}
+              status={vm.status}
+            />
           )}
-          {vm.items.map(({ aquarium, latest, lastEdited }) => (
-            <Card
-              key={aquarium.id}
-              onPress={() =>
-                router.push({
-                  pathname: '/aquarium/[id]',
-                  params: { id: aquarium.id },
-                })
-              }
-            >
-              <View
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}
-              >
-                <View
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    backgroundColor: c.primary + '1F',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Icon name="water_drop" color={c.primary} />
-                  {vm.status?.schedules.find(
-                    (s) => s.aquariumId === aquarium.id,
-                  )?.isNotificationActive && (
-                    <View
-                      style={{
-                        position: 'absolute',
-                        right: -2,
-                        top: -4,
-                        backgroundColor: c.danger,
-                        borderRadius: 10,
-                        paddingHorizontal: 5,
-                      }}
-                    >
-                      <Text style={{ color: c.background, fontSize: 11 }}>
-                        1
-                      </Text>
-                    </View>
-                  )}
-                </View>
-                <View style={{ flex: 1, gap: 4 }}>
-                  <Body strong style={{ fontSize: 16, lineHeight: 24 }}>
-                    {aquarium.name}
-                  </Body>
-                  <Body muted>{aquariumSummary(aquarium)}</Body>
-                  <Text
-                    style={{
-                      fontFamily: 'RobotoBlack',
-                      fontSize: 22,
-                      lineHeight: 28,
-                      color: c.ink,
-                      marginTop: 2,
-                    }}
-                  >
-                    {entrySummary(latest)}
-                  </Text>
-                  <Body muted style={{ fontSize: 12, lineHeight: 16 }}>
-                    Zuletzt bearbeitet: {dateTime(lastEdited)}
-                  </Body>
-                  {vm.drafts.some((d) => d.aquariumId === aquarium.id) && (
-                    <Body muted style={{ fontSize: 12 }}>
-                      Gesicherter Formularentwurf
-                    </Body>
-                  )}
-                  <ReminderInfo aquarium={aquarium} status={vm.status} />
-                </View>
-                <Icon name="chevron_right" />
-              </View>
-            </Card>
-          ))}
-        </>
+        />
       )}
     </Page>
   );
@@ -319,6 +387,7 @@ export function AquariumDetailScreen() {
       }
     >
       <Stack.Screen options={{ title: r.name }} />
+      <AquariumCover photo={vm.photo} title={r.name} expandable />
       <Card onPress={edit} style={{ margin: 4, padding: 17, gap: 0 }}>
         <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
           <View
@@ -358,7 +427,7 @@ export function AquariumDetailScreen() {
           {entrySummary(vm.entries[0] ?? null)}
         </Body>
         {!!vm.entries[0] && (
-          <Body>Zuletzt am {dateTime(vm.entries[0].occurredAt)}</Body>
+          <Body>Zuletzt am {entryDateTime(vm.entries[0])}</Body>
         )}
         <View style={{ marginTop: 10 }}>
           {r.volumeLiters !== null && (
@@ -386,7 +455,7 @@ export function AquariumDetailScreen() {
             void feedback
               .confirm(
                 'Aquarium löschen?',
-                'Das Aquarium, seine Pflegeeinträge und Fotos werden gelöscht. Exportierte Backups bleiben erhalten.',
+                'Das Aquarium, seine Pflegeeinträge, Fotos und PDF-Protokolle werden gelöscht. Exportierte Backups bleiben erhalten.',
               )
               .then((ok) => {
                 if (ok) void vm.remove();
@@ -449,6 +518,7 @@ export function AquariumDetailScreen() {
           }
         />
       )}
+      <Reports aquariumId={id} hasPhotos={!!vm.photo} />
     </Page>
   );
 }

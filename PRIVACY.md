@@ -1,17 +1,17 @@
-# Datenschutzerklärung AquariumLog
+# Datenschutz für AquariumLog
 
-Verantwortlich: Wasiliy Strecker · AppFabrik AI.
+Stand: 22. Oktober 2026
 
-AquariumLog speichert Aquarien, Pflegeeinträge, Messwerte, Notizen und Fotos lokal im privaten App-Speicher. Es gibt kein Konto, keine Cloud-Synchronisierung und keine eigene Telemetrie.
+Die Datenschutzerklärung folgt MaschinenLog mit den AquariumLog-Funktionen.
+Die deutschen und englischen Seiten liegen unter `docs/datenschutz/index.html`
+und `docs/privacy/index.html`.
 
-Die Kameraberechtigung wird für selbst ausgelöste Fotoaufnahmen benötigt. Galeriefotos werden nur nach deiner Auswahl übernommen. Fotos werden auf maximal 1920 Pixel verkleinert und als JPEG gespeichert. Aufnahme- und Standortmetadaten werden nicht übernommen.
+[Datenschutzerklärung](https://wasiliy-strecker.github.io/aquarium-care-log/datenschutz/)
 
-Optionale Pflegeerinnerungen werden lokal über Android geplant. Benachrichtigungen und genaue Alarme benötigen die entsprechende Systemfreigabe. Android-Einstellungen können Zustellung und Ton beeinflussen.
+[Privacy Policy](https://wasiliy-strecker.github.io/aquarium-care-log/privacy/)
 
-Backups werden mit AES-256-GCM verschlüsselt. Der Schlüssel wird mit PBKDF2-HMAC-SHA256 und 600000 Runden aus deinem Passwort abgeleitet. Ohne das Passwort kann eine Sicherung nicht wiederhergestellt werden.
+Verantwortlicher und Datenschutzkontakt: Wasiliy Strecker, AppFabrik AI,
+Ludwigstrasse 23, 86152 Augsburg, Deutschland.
 
-Du wählst den Speicherort deiner Sicherung selbst. Wenn du eine Sicherung oder ein Foto teilst, übergibst du die ausgewählte Datei an die von dir gewählte andere App. Deren Datenverarbeitung richtet sich nach dem jeweiligen Anbieter.
-
-Formularentwürfe bleiben lokal und gehören nicht zum Backup. Daten bleiben gespeichert, bis du sie in AquariumLog löschst oder die App-Daten entfernst. Bereits exportierte Dateien werden dabei nicht gelöscht.
-
-Du kannst deine Daten über ein verschlüsseltes Backup sichern und einzelne Einträge oder Aquarien in der App löschen. Die Nutzung ist kostenlos, ohne Werbung und ohne serverseitige Analyse.
+Datenschutz- und Rechtskontakt: contact@appfabrik-ai.de.
+Nutzer-Support: support@appfabrik-ai.de.

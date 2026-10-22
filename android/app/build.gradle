@@ -214,3 +214,9 @@ android {
 dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
 }
+
+// AquariumLog stable local Dev signing
+android.signingConfigs.debug.storeFile = rootProject.file("../.local/dev.keystore")
+
+// AquariumLog private Store upload signing.
+apply from: file('store-signing.gradle')

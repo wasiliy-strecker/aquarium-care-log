@@ -1,3 +1,5 @@
+import { messages } from '../../core/texts';
+import type { BackupProgress } from '../../core/backup/backup-progress';
 import { useState } from 'react';
 import { useServices } from '../../core/composition';
 import { useTask } from '../../core/ui/use-task';
@@ -5,27 +7,47 @@ import { useFeedback } from '../../core/ui/feedback';
 import { useLeaveGuard } from '../../core/ui/use-leave-guard';
 import { errorText } from '../../core/ui/components';
 import type { PreparedBackup } from '../../core/media/media-service';
-import { router } from 'expo-router';
+import { privacyUrl } from './aquarium-links';
+export function backupProgressLabel(progress: BackupProgress): string {
+  const label = messages.backupProgress[progress.phase];
+  return progress.totalFiles && progress.completedFiles !== undefined
+    ? `${label} · ${messages.backupProgress.files.replace('{completed}', String(progress.completedFiles)).replace('{total}', String(progress.totalFiles))}`
+    : `${label} …`;
+}
 export function useSettings(
   askPassword: (confirm: boolean) => Promise<string | null>,
 ) {
-  const { backup, media, refresh } = useServices();
+  const { backup, media, refresh, links } = useServices();
   const task = useTask(),
     feedback = useFeedback();
   const [phase, setPhase] = useState('');
+  const onProgress = (progress: BackupProgress) =>
+    setPhase(backupProgressLabel(progress));
   useLeaveGuard({ dirty: false, busy: task.busy, discard: async () => {} });
   return {
     ...task,
     phase,
-    openPrivacy: () => router.push('/privacy'),
+    openPrivacy: () =>
+      task.run(async () => {
+        try {
+          await links.open(privacyUrl);
+        } catch {
+          throw new Error(
+            'Die Datenschutzerklärung konnte nicht geöffnet werden. Bitte versuche es erneut.',
+          );
+        }
+      }),
     create: () =>
       task.run(async () => {
         const password = await askPassword(true);
         if (password === null) return;
         let prepared: PreparedBackup | undefined;
         try {
-          setPhase('Backup wird vorbereitet und verschlüsselt …');
-          prepared = await media.prepareBackup(await backup.create(password));
+          onProgress({ phase: 'preparing' });
+          const bytes = await backup.create(password, onProgress);
+          setPhase(messages.backupProgress.preparingLocation);
+          await new Promise<void>((resolve) => setTimeout(resolve, 0));
+          prepared = await media.prepareBackup(bytes);
           setPhase('');
           let finished = false;
           while (!finished) {
@@ -98,20 +120,24 @@ export function useSettings(
         const password = await askPassword(false);
         if (password === null) return;
         try {
-          setPhase('Backup wird geprüft …');
-          const decoded = await backup.codec.decode(bytes, password);
+          onProgress({ phase: 'checking' });
+          const decoded = await backup.codec.decode(
+            bytes,
+            password,
+            onProgress,
+          );
           setPhase('');
           if (
             !(await feedback.confirm(
               'Backup wiederherstellen?',
-              `${decoded.data.aquariums.length} Aquarien und ${decoded.data.entries.length} Pflegeeinträge werden importiert. Neuere lokale Einträge werden nicht überschrieben.`,
+              `${decoded.data.aquariums.length} Aquarien und ${decoded.data.entries.length} Pflegeeinträge werden importiert. Neuere lokale Pflegeeinträge werden nicht überschrieben.`,
               'Wiederherstellen',
               false,
             ))
           )
             return;
-          setPhase('Backup wird wiederhergestellt …');
-          const result = await backup.restore(decoded);
+          onProgress({ phase: 'restoring' });
+          const result = await backup.restore(decoded, onProgress);
           refresh();
           feedback.notify(
             [

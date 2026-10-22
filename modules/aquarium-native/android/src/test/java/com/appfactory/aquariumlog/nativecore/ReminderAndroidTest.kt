@@ -8,6 +8,7 @@ import java.time.Duration
 import android.app.NotificationManager
 import android.media.AudioAttributes
 import android.os.Build
+import android.graphics.Color
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
@@ -35,7 +36,7 @@ class ReminderAndroidTest {
     @Test fun normalAndPunctualNotificationsHaveSoundAndVibration() {
         for (punctual in listOf(false, true)) {
             notifications.cancelAll()
-            assertEquals("posted", ReminderNotifier.showTest(context, "test", "Test", "other", "Test", null, null, punctual))
+            assertEquals("posted", ReminderNotifier.showTest(context, "test", "Test", "Test", null, null, punctual))
             val notification = shadowOf(notifications).allNotifications.single()
             if (Build.VERSION.SDK_INT < 26) {
                 assertNotNull("Android 7 needs sound on the notification itself", notification.sound)
@@ -51,19 +52,54 @@ class ReminderAndroidTest {
         }
     }
     private fun reminder(id: String = "saved", punctual: Boolean = false) = StoredReminder(
-        id, "Test", "other", "Test", null, null, "daily", 1, null, 9, 0,
+        id, "Test", "aquarium", "Aquarium", null, null, "daily", 1, null, 9, 0,
         if (punctual) "punctualWithSound" else "normal")
 
-    @Test fun careWithoutHeightAppearsInRealAndTestNotifications() {
-        val care = reminder().copy(label = "Testaquarium", latestValue = "Wasserwechsel", latestUnit = "")
-        ReminderNotifier.showAquarium(context, care)
+    @Test fun latestCareEntryAppearsInRealAndTestNotifications() {
+        val aquarium = reminder().copy(label = "Wohnzimmer", latestValue = "Wasserwechsel", latestUnit = null)
+        ReminderNotifier.showAquarium(context, aquarium)
         var notification = shadowOf(notifications).allNotifications.single()
         assertTrue(notification.extras.getCharSequence("android.text").toString().contains("Wasserwechsel"))
         assertFalse(notification.extras.getCharSequence("android.text").toString().contains("0 h"))
         notifications.cancelAll()
-        assertEquals("posted", ReminderNotifier.showTest(context, "test", "Testaquarium", "other", "Aquarium", "Fütterung", "", false))
+        assertEquals("posted", ReminderNotifier.showTest(context, "test", "Wohnzimmer", "Aquarium", "Wasserwechsel", null, false))
         notification = shadowOf(notifications).allNotifications.single()
-        assertEquals("Letzter Eintrag: Fütterung", notification.extras.getCharSequence("android.text").toString())
+        assertEquals("Letzte Pflege: Wasserwechsel", notification.extras.getCharSequence("android.text").toString())
+    }
+
+    @Test fun realAndTestNotificationsUseTheAppBrandInBothModes() {
+        for (punctual in listOf(false, true)) {
+            notifications.cancelAll()
+            assertNotNull(ReminderNotifier.showAquarium(context, reminder(punctual = punctual)))
+            assertEquals("posted", ReminderNotifier.showTest(context, "saved", "Wohnzimmer", "Aquarium", "Wasserwechsel", null, punctual))
+            assertEquals(2, shadowOf(notifications).allNotifications.size)
+            for (notification in shadowOf(notifications).allNotifications) {
+                assertEquals(R.drawable.ic_stat_aquarium, notification.smallIcon.resId)
+                assertEquals(Color.rgb(23, 107, 117), notification.color)
+                val intent = shadowOf(notification.contentIntent).savedIntent
+                assertEquals("aquariumlog://aquarium/saved", intent.data.toString())
+                assertEquals(context.packageName, intent.`package` ?: intent.component?.packageName)
+            }
+        }
+    }
+
+    @Test fun keepsTheExistingAquariumNotificationIdentity() {
+        ReminderNotifier.showAquarium(context, reminder())
+        assertEquals("aquarium:saved", notifications.activeNotifications.single().tag)
+        assertEquals("aquariumlog_reminders", ReminderNotifier.channelId(false))
+        assertEquals("aquariumlog_alarm_reminders_v1", ReminderNotifier.channelId(true))
+    }
+
+    @Test @Config(sdk = [35])
+    fun blockedChannelsAreReportedIndependently() {
+        assertEquals(ReminderAvailability.AVAILABLE, ReminderNotifier.availability(context, false))
+        val channel = notifications.getNotificationChannel(ReminderNotifier.channelId(false))
+        channel.importance = NotificationManager.IMPORTANCE_NONE
+        notifications.createNotificationChannel(channel)
+        assertEquals(ReminderAvailability.CHANNEL_BLOCKED, ReminderNotifier.availability(context, false))
+        assertEquals(ReminderAvailability.AVAILABLE, ReminderNotifier.availability(context, true))
+        assertEquals("channelBlocked", ReminderNotifier.showTest(context, null, "Test", "Test", null, null, false))
+        assertNull(ReminderNotifier.showAquarium(context, reminder()))
     }
 
     @Test fun acceptedScheduleReportsItsActualAlarmAndCancellationRemovesIt() {
@@ -76,6 +112,7 @@ class ReminderAndroidTest {
         assertEquals(false, status["isExact"])
         assertTrue(ReminderScheduler.cancel(context, saved.aquariumId))
         assertNull(ReminderStore.find(context, saved.aquariumId))
+        assertFalse(ReminderStore.statusIds(context).contains(saved.aquariumId))
         assertEquals("none", ReminderScheduler.status(context, saved.aquariumId)["planningState"])
         assertTrue(shadowOf(context.getSystemService(AlarmManager::class.java)).scheduledAlarms.isEmpty())
     }
@@ -110,7 +147,7 @@ class ReminderAndroidTest {
     @Test fun legacyTestExpiresWithoutRemovingRealNotifications() {
         if (Build.VERSION.SDK_INT >= 26) return
         ReminderNotifier.showAquarium(context, reminder())
-        assertEquals("posted", ReminderNotifier.showTest(context, "test", "Test", "other", "Test", null, null, false))
+        assertEquals("posted", ReminderNotifier.showTest(context, "test", "Test", "Test", null, null, false))
         val alarm = shadowOf(context.getSystemService(AlarmManager::class.java)).scheduledAlarms.single()
         assertEquals(SystemClock.elapsedRealtime() + 60_000L, alarm.triggerAtTime)
         ShadowSystemClock.advanceBy(Duration.ofSeconds(60))
@@ -165,11 +202,13 @@ class ReminderAndroidTest {
         assertFalse(ReminderScheduler.cancel(context, saved.aquariumId))
         assertEquals("cancelFailed", ReminderScheduler.status(context, saved.aquariumId)["planningState"])
         assertNull(ReminderStore.find(context, saved.aquariumId))
+        assertTrue(ReminderStore.statusIds(context).contains(saved.aquariumId))
         AquariumReminderReceiver().onReceive(context, Intent().putExtra("aquarium_id", saved.aquariumId))
         assertTrue(shadowOf(notifications).allNotifications.isEmpty())
         FailingCancellation.fail = false
-        assertTrue(ReminderScheduler.cancel(context, saved.aquariumId))
+        ReminderScheduler.rescheduleAll(context)
         assertEquals("none", ReminderScheduler.status(context, saved.aquariumId)["planningState"])
+        assertFalse(ReminderStore.statusIds(context).contains(saved.aquariumId))
     }
 
     @Implements(AlarmManager::class)

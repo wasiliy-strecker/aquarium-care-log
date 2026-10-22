@@ -22,6 +22,10 @@ export const light = {
   onDanger: '#FFFFFF',
   elevated: '#E3EFF0',
   disabled: '#D2DEE0',
+  destructive: '#BA1A1A',
+  onDestructive: '#FFFFFF',
+  destructiveContainer: '#FFDAD6',
+  selection: '#176B7540',
   dark: false,
 };
 export const dark: typeof light = {
@@ -40,10 +44,14 @@ export const dark: typeof light = {
   onErrorContainer: '#FFDAD6',
   border: '#3C565D',
   outline: '#879EA4',
-  danger: '#FFB4AB',
+  danger: '#FF5449',
   onDanger: '#690005',
   elevated: '#263D43',
   disabled: '#2D4147',
+  destructive: '#FF5449',
+  onDestructive: '#210000',
+  destructiveContainer: '#690005',
+  selection: '#7FD3D840',
   dark: true,
 };
 const ThemeContext = createContext(light);

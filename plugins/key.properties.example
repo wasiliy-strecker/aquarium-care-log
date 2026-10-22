@@ -1,0 +1,6 @@
+# Link android/key.properties to the app's private configuration outside Git.
+# Relative storeFile paths resolve from android/app.
+storeFile=/absolute/private/path/to/aquariumlog/upload-keystore.p12
+storePassword=REPLACE_WITH_PRIVATE_PASSWORD
+keyAlias=upload
+keyPassword=REPLACE_WITH_PRIVATE_PASSWORD

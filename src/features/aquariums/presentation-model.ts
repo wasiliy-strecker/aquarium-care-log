@@ -3,6 +3,7 @@ import type {
   Aquarium,
   Reminder,
   EntryDraft,
+  AquariumPhoto,
 } from '../../core/domain/models';
 import { measurementDelta } from '../../core/domain/models';
 
@@ -28,6 +29,7 @@ export type DashboardItem = {
   aquarium: Aquarium;
   latest: CareEntry | null;
   lastEdited: string;
+  photo: AquariumPhoto | null;
 };
 export type AquariumSort = 'lastEdited' | 'name' | 'location';
 export const sortLabels: Record<AquariumSort, string> = {

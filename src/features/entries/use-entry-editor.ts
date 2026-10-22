@@ -14,6 +14,8 @@ import { useFeedback } from '../../core/ui/feedback';
 import { useLeaveGuard } from '../../core/ui/use-leave-guard';
 import { mergePhotos } from '../media/photo-selection';
 import { capturePhase } from '../aquariums/presentation-model';
+import { useFormErrors } from '../../core/ui/use-form-errors';
+import { entryFieldOrder, validateEntryForm } from './entry-form-validation';
 export function useEntryEditor(aquariumId: string, entryId?: string) {
   const { aquariumService, media, refresh } = useServices();
   const feedback = useFeedback();
@@ -24,6 +26,7 @@ export function useEntryEditor(aquariumId: string, entryId?: string) {
     initial = useRef(''),
     committed = useRef(false);
   const task = useTask();
+  const formErrors = useFormErrors();
   const { setError, setNotice } = task;
   useEffect(() => {
     let active = true;
@@ -47,6 +50,7 @@ export function useEntryEditor(aquariumId: string, entryId?: string) {
         : {
             activity: '',
             occurredAt: saved.createdAt,
+            timezoneOffsetMinutes: saved.form.timezoneOffsetMinutes,
             measurementLabel: '',
             value: '',
             unit: '',
@@ -87,9 +91,21 @@ export function useEntryEditor(aquariumId: string, entryId?: string) {
   }
   function change<K extends keyof EntryForm>(key: K, value: EntryForm[K]) {
     if (!current.current) return;
+    formErrors.clear(key);
+    if (key === 'value') formErrors.clear('measurementLabel');
     void apply({
       ...current.current,
-      form: { ...current.current.form, [key]: value },
+      form: {
+        ...current.current.form,
+        [key]: value,
+        ...(key === 'occurredAt' && current.current.form.occurredAt !== value
+          ? {
+              timezoneOffsetMinutes: -new Date(
+                value as string,
+              ).getTimezoneOffset(),
+            }
+          : {}),
+      },
     }).catch((e) =>
       setError(`Entwurf konnte nicht gesichert werden: ${errorText(e)}`),
     );
@@ -99,6 +115,8 @@ export function useEntryEditor(aquariumId: string, entryId?: string) {
   }
   return {
     draft,
+    fieldErrors: formErrors.fieldErrors,
+    errorTarget: formErrors.errorTarget,
     activities,
     dirty,
     phase: draft ? capturePhase(draft) : 'choose',
@@ -180,6 +198,12 @@ export function useEntryEditor(aquariumId: string, entryId?: string) {
     save: () =>
       task.run(async () => {
         if (!current.current) return;
+        const errors = validateEntryForm(current.current.form);
+        if (Object.keys(errors).length) {
+          formErrors.show(errors, entryFieldOrder);
+          return;
+        }
+        formErrors.clear();
         await aquariumService.persistDraft(current.current);
         const result = await aquariumService.saveEntry(current.current);
         committed.current = true;

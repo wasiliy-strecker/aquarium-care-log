@@ -16,6 +16,7 @@ import { useTheme } from './theme';
 import { Icon, type IconName } from './icon';
 import { calendarCells, parseDateInput } from './date-time-model';
 import { DialogActions } from './dialog-actions';
+import { overlayFrameStyle } from './overlay-frame';
 
 type Request = {
   mode: 'date' | 'time';
@@ -186,6 +187,8 @@ function Picker({
           }
           placeholder={r.mode === 'date' ? 'TT.MM.JJJJ' : undefined}
           placeholderTextColor={c.muted}
+          cursorColor={c.primary}
+          selectionColor={c.selection}
           maxLength={r.mode === 'time' ? 2 : 10}
           style={{
             ...text,
@@ -194,7 +197,7 @@ function Picker({
             padding: 12,
             borderWidth: 1,
             borderRadius: 8,
-            borderColor: error ? c.danger : c.outline,
+            borderColor: error ? c.danger : c.border,
             backgroundColor: c.input,
           }}
         />
@@ -529,6 +532,7 @@ function Picker({
             maxWidth: r.mode === 'date' && !input ? 360 : 328,
             maxHeight: window.height - safe.top - safe.bottom - 48,
             backgroundColor: c.card,
+            ...overlayFrameStyle(c.primary),
             borderRadius: 28,
             overflow: 'hidden',
           }}

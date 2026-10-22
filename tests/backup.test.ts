@@ -38,6 +38,28 @@ async function prepared() {
   return { f, tank: storedTank, entry, bytes: await f.backup.create(password) };
 }
 describe('Encrypted aquarium backups', () => {
+  it('repairs matching missing draft photos while retaining newer local entry and draft contents', async () => {
+    const { f, bytes, tank, entry } = await prepared();
+    const newer = {
+      ...entry,
+      note: 'Neuer lokaler Stand',
+      updatedAt: '2099-01-01T00:00:00.000Z',
+    };
+    await f.repo.saveEntry(newer, 'absent');
+    const draft = await f.service.draft(tank.id, newer);
+    draft.form.note = 'Ungespeicherter Entwurf';
+    await f.service.persistDraft(draft);
+    await f.vault.remove(entry.attachments[0]!.file);
+    await f.backup.restore(await f.backup.codec.decode(bytes, password));
+    const restored = (await f.repo.entry(entry.id))!;
+    const kept = (await f.repo.drafts())[0]!;
+    expect(restored.note).toBe(newer.note);
+    expect(kept.form.note).toBe(draft.form.note);
+    expect(kept.form.attachments[0]!.file).toBe(restored.attachments[0]!.file);
+    expect(await f.vault.read(kept.form.attachments[0]!.file)).toEqual(
+      await photo(),
+    );
+  });
   it('round trips sizes, custom activity, pH, reminders and photos with its own format', async () => {
     const { bytes, tank, entry } = await prepared(),
       target = await setup();

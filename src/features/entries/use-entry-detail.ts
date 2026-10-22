@@ -50,7 +50,7 @@ export function useEntryDetail(id: string) {
       if (
         !(await feedback.confirm(
           'Eintrag löschen?',
-          'Der Pflegeeintrag und seine Fotos werden gelöscht.',
+          'Der Pflegeeintrag, seine Fotos und PDF-Protokolle werden gelöscht.',
         ))
       )
         return;
