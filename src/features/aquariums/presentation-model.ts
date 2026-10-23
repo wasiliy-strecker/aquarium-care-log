@@ -5,7 +5,11 @@ import type {
   EntryDraft,
   AquariumPhoto,
 } from '../../core/domain/models';
-import { measurementDelta } from '../../core/domain/models';
+import {
+  measurementDelta,
+  measurementText,
+  measurementValueText,
+} from '../../core/domain/models';
 
 export type HistoryItem = {
   entry: CareEntry;
@@ -22,7 +26,7 @@ export function historyComparison(
   const delta = measurementDelta(entry, previous);
   if (delta === null || !entry.measurement || !previous.measurement)
     return null;
-  return `${previous.measurement.value.toLocaleString('de-DE')} → ${entry.measurement.value.toLocaleString('de-DE')} = ${delta.toLocaleString('de-DE')} ${entry.measurement.unit} Differenz`;
+  return `${measurementValueText(previous.measurement.value)} → ${measurementValueText(entry.measurement.value)} = ${delta.toLocaleString('de-DE')} ${entry.measurement.unit} Differenz`;
 }
 
 export type DashboardItem = {
@@ -49,9 +53,7 @@ export function entrySummary(entry: CareEntry | null) {
   return !entry
     ? 'Noch kein Eintrag'
     : entry.activity +
-        (entry.measurement
-          ? ` · ${entry.measurement.label}: ${entry.measurement.value.toLocaleString('de-DE')}${entry.measurement.unit ? ' ' + entry.measurement.unit : ''}`
-          : '');
+        (entry.measurement ? ` · ${measurementText(entry)}` : '');
 }
 export function visibleAquariums(
   items: DashboardItem[],

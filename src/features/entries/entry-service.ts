@@ -4,7 +4,6 @@ import {
   aquariumAtCaptureSchema,
   snapshotFiles,
   entryForm,
-  parseDecimal,
   type Attachment,
   type EntryDraft,
   type CareEntry,
@@ -116,7 +115,7 @@ export class AquariumService {
   ): Promise<{ entry: CareEntry; warnings: string[] }> {
     return this.queue.run(async () => {
       const form = draft.form;
-      const value = parseDecimal(form.value);
+      const value = form.value.trim() ? form.value : null;
       const before = draft.entryId
         ? await this.repository.entry(draft.entryId)
         : null;

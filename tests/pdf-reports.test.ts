@@ -110,6 +110,30 @@ it('exports the complete history with every ordered photo and notes, and single 
     await Promise.all(first.attachments.map((p) => f.vault.read(p.file))),
   );
 });
+it('keeps free-text values unchanged in single and history reports', async () => {
+  const f = await setup();
+  const draft = await f.service.draft(f.aquarium.id);
+  draft.form.activity = 'Wassertest';
+  draft.form.measurementLabel = 'Zustand';
+  draft.form.value = '<0,05 / unauffällig ±';
+  const { entry } = await f.service.saveEntry(draft);
+  const fields = vi.spyOn(ReportLayout.prototype, 'dataTable');
+  const history = vi.spyOn(ReportLayout.prototype, 'historyTable');
+  for (const entryId of [entry.id, null]) {
+    fields.mockClear();
+    await f.reports.createReport(f.aquarium.id, entryId, false);
+    expect(
+      fields.mock.calls.some(([rows]) =>
+        rows.some(
+          ([label, value]) => label === 'Wert' && value === draft.form.value,
+        ),
+      ),
+    ).toBe(true);
+  }
+  expect(history.mock.calls[0]![0][0]).toContain(
+    `Zustand: ${draft.form.value}`,
+  );
+});
 it('opens, shares and prints the saved PDF and rejects changed bytes before handing them to Android', async () => {
   const f = await setup();
   const entry = await addEntry(f, 1);

@@ -27,9 +27,21 @@ it('marks aquarium and measurement errors at their fields, retaining optional va
     };
     expect(validateEntryForm(complete)).toEqual({});
     expect(validateEntryForm({ ...complete, value: '' })).toEqual({});
-    expect(validateEntryForm({ ...complete, value: 'x' }).value).toBeTruthy();
+    for (const value of [
+      'Vm nbb',
+      '<0,05',
+      '24–26',
+      'normal 🐠',
+      ' 007,20 ',
+      ' ',
+    ])
+      expect(validateEntryForm({ ...complete, value })).toEqual({});
     expect(
       validateEntryForm({ ...complete, measurementLabel: '' }).measurementLabel,
+    ).toBeTruthy();
+    expect(
+      validateEntryForm({ ...complete, value: 'klar', measurementLabel: '' })
+        .measurementLabel,
     ).toBeTruthy();
     expect(
       Object.keys(

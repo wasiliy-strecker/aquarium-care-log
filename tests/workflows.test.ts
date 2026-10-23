@@ -13,6 +13,49 @@ afterEach(async () => {
 });
 
 describe('Real SQLite, drafts and photos', () => {
+  it('preserves free-text values through drafts, reopening, editing, search and encrypted backup', async () => {
+    const f = await setup(),
+      tank = aquarium();
+    await f.service.saveAquarium(tank);
+    const draft = await f.service.draft(tank.id);
+    draft.form.activity = 'Wassertest';
+    draft.form.measurementLabel = 'Zustand';
+    draft.form.value = 'Vm nbb · <0,05 / normal 🐠';
+    await f.service.persistDraft(draft);
+    const reopened = connect(f.path);
+    let entry;
+    try {
+      const repo = new SqlRepository(reopened.db);
+      const restoredDraft = (await repo.drafts())[0]!;
+      expect(restoredDraft.form.value).toBe(draft.form.value);
+      entry = (await f.service.saveEntry(restoredDraft)).entry;
+      expect((await repo.entry(entry.id))?.measurement?.value).toBe(
+        draft.form.value,
+      );
+      expect((await repo.entries(tank.id, 'Vm nbb')).total).toBe(1);
+      const edit = await f.service.draft(tank.id, entry);
+      expect(edit.form.value).toBe(draft.form.value);
+      edit.form.value = ' 007,20 / klar ± 🐠 ';
+      entry = (await f.service.saveEntry(edit)).entry;
+      expect((await repo.entry(entry.id))?.measurement?.value).toBe(
+        edit.form.value,
+      );
+    } finally {
+      reopened.raw.close();
+    }
+    const target = await setup();
+    const password = 'AquariumLog Testpasswort';
+    const bytes = await f.backup.create(password);
+    await target.backup.restore(
+      await target.backup.codec.decode(bytes, password),
+    );
+    expect((await target.repo.entry(entry.id))?.measurement).toEqual(
+      entry.measurement,
+    );
+    const edit = await target.service.draft(tank.id, entry);
+    edit.form.value = '   ';
+    expect((await target.service.saveEntry(edit)).entry.measurement).toBeNull();
+  });
   it('persists custom activities and optional measurements after reopening', async () => {
     const f = await setup(),
       tank = aquarium();

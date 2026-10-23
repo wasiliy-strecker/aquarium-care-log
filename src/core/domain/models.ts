@@ -69,7 +69,12 @@ export const entrySchema = z
     measurement: z
       .object({
         label: short.trim().min(1, 'Bitte die Messgröße benennen.'),
-        value: z.number().finite(),
+        value: z.union([
+          z.number().finite(),
+          z
+            .string()
+            .refine((value) => !!value.trim(), 'Bitte einen Wert eingeben.'),
+        ]),
         unit: short.trim(),
       })
       .strict()
@@ -164,7 +169,10 @@ export function entryForm(entry: CareEntry): EntryForm {
     occurredAt: entry.occurredAt,
     timezoneOffsetMinutes: entry.timezoneOffsetMinutes ?? null,
     measurementLabel: entry.measurement?.label ?? '',
-    value: numberInput(entry.measurement?.value ?? null),
+    value:
+      typeof entry.measurement?.value === 'string'
+        ? entry.measurement.value
+        : numberInput(entry.measurement?.value ?? null),
     unit: entry.measurement?.unit ?? '',
     note: entry.note,
     attachments: [...entry.attachments],
@@ -174,13 +182,29 @@ export function measurementDelta(
   current: CareEntry,
   previous: CareEntry,
 ): number | null {
-  return current.measurement &&
-    previous.measurement &&
-    current.measurement.label.toLocaleLowerCase('de-DE') ===
-      previous.measurement.label.toLocaleLowerCase('de-DE') &&
-    current.measurement.unit === previous.measurement.unit
-    ? current.measurement.value - previous.measurement.value
-    : null;
+  if (
+    !current.measurement ||
+    !previous.measurement ||
+    current.measurement.label.toLocaleLowerCase('de-DE') !==
+      previous.measurement.label.toLocaleLowerCase('de-DE') ||
+    current.measurement.unit !== previous.measurement.unit
+  )
+    return null;
+  try {
+    const currentValue =
+      typeof current.measurement.value === 'number'
+        ? current.measurement.value
+        : parseDecimal(current.measurement.value);
+    const previousValue =
+      typeof previous.measurement.value === 'number'
+        ? previous.measurement.value
+        : parseDecimal(previous.measurement.value);
+    return currentValue !== null && previousValue !== null
+      ? currentValue - previousValue
+      : null;
+  } catch {
+    return null;
+  }
 }
 export function snapshotFiles(data: Snapshot): string[] {
   return [
@@ -246,9 +270,12 @@ export function validateSnapshot(input: unknown): Snapshot {
 export function entryLabel(entry: Pick<CareEntry, 'activity'>): string {
   return entry.activity;
 }
+export function measurementValueText(value: string | number): string {
+  return typeof value === 'number' ? value.toLocaleString('de-DE') : value;
+}
 export function measurementText(entry: CareEntry): string {
   const value = entry.measurement;
   return value
-    ? `${value.label}: ${value.value.toLocaleString('de-DE')}${value.unit ? ' ' + value.unit : ''}`
+    ? `${value.label}: ${measurementValueText(value.value)}${value.unit ? ' ' + value.unit : ''}`
     : '–';
 }

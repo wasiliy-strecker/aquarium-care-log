@@ -144,7 +144,6 @@ export function EntryEditorScreen() {
               <Field
                 error={vm.fieldErrors.value}
                 label="Wert (optional)"
-                keyboardType="numbers-and-punctuation"
                 value={form.value}
                 onChangeText={(v) => vm.change('value', v)}
                 editable={!vm.busy}

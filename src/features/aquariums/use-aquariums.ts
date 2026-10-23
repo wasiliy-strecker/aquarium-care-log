@@ -7,7 +7,7 @@ import type {
   CareEntry,
   AquariumPhoto,
 } from '../../core/domain/models';
-import { PAGE_SIZE } from '../../core/domain/models';
+import { PAGE_SIZE, measurementText } from '../../core/domain/models';
 import { useReminderStatus } from './use-reminder-status';
 import { errorText } from '../../core/ui/components';
 import { useTask } from '../../core/ui/use-task';
@@ -155,7 +155,7 @@ export function useAquariumDetail(id: string, history = false) {
           : undefined,
         photoCount: photos.length,
         measurementText: entry.measurement
-          ? `${entry.measurement.label}: ${entry.measurement.value.toLocaleString('de-DE')}${entry.measurement.unit ? ' ' + entry.measurement.unit : ''}`
+          ? measurementText(entry)
           : 'Ohne Messangabe',
         comparison: comparisons[entry.id] ?? null,
       };

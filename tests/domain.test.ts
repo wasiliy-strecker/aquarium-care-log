@@ -4,9 +4,15 @@ import {
   entrySchema,
   parseDecimal,
   measurementDelta,
+  entryForm,
+  measurementText,
   validateSnapshot,
 } from '../src/core/domain/models';
-import { visibleAquariums } from '../src/features/aquariums/presentation-model';
+import {
+  visibleAquariums,
+  entrySummary,
+  historyComparison,
+} from '../src/features/aquariums/presentation-model';
 import { aquarium, env } from './support';
 
 describe('Aquarium and measurement fields', () => {
@@ -21,7 +27,7 @@ describe('Aquarium and measurement fields', () => {
       false,
     );
   });
-  it('accepts decimals, zero and signed measurements and rejects ambiguous input', () => {
+  it('parses unambiguous decimals for volume validation and numeric comparisons', () => {
     expect(parseDecimal('24,5')).toBe(24.5);
     expect(parseDecimal('7.2')).toBe(7.2);
     expect(parseDecimal('0')).toBe(0);
@@ -56,6 +62,25 @@ describe('Aquarium and measurement fields', () => {
       }),
     ).toBeNull();
     expect(measurementDelta(entry, { ...entry, measurement: null })).toBeNull();
+    expect(entryForm(entry).value).toBe('7,2');
+    const numericText = {
+      ...entry,
+      measurement: { label: 'pH-Wert', value: '7,40', unit: '' },
+    };
+    expect(measurementDelta(numericText, entry)).toBeCloseTo(0.2);
+    expect(entryForm(numericText).value).toBe('7,40');
+    expect(historyComparison(numericText, entry)).toContain('7,2 → 7,40');
+    for (const value of ['Vm nbb', '<0,05', '24–26', 'normal 🐠', 'NaN']) {
+      const text = entrySchema.parse({
+        ...entry,
+        measurement: { label: 'pH-Wert', value, unit: '' },
+      });
+      expect(entryForm(text).value).toBe(value);
+      expect(measurementText(text)).toBe(`pH-Wert: ${value}`);
+      expect(entrySummary(text)).toBe(`Wassertest · pH-Wert: ${value}`);
+      expect(historyComparison(text, numericText)).toBeNull();
+      expect(historyComparison(numericText, text)).toBeNull();
+    }
     expect(() =>
       entrySchema.parse({
         ...entry,

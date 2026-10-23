@@ -1,7 +1,11 @@
 import { PDFDocument } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
 import type { CareEntry, Aquarium } from '../domain/models';
-import { entryLabel, measurementText } from '../domain/models';
+import {
+  entryLabel,
+  measurementText,
+  measurementValueText,
+} from '../domain/models';
 import {
   captureDifferences,
   interpolate,
@@ -188,7 +192,7 @@ export class PdfService {
       if (step.measurement)
         rows.push(
           [text.measurement, step.measurement.label],
-          [text.value, step.measurement.value.toLocaleString('de-DE')],
+          [text.value, measurementValueText(step.measurement.value)],
           [text.unit, step.measurement.unit || '–'],
         );
       // Keep the heading, fields and first image pair together when they fit on a page.

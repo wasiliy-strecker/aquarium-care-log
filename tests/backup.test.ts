@@ -71,7 +71,7 @@ describe('Encrypted aquarium backups', () => {
     expect(restored.aquariums).toEqual([tank]);
     expect(restored.entries[0]?.measurement).toEqual({
       label: 'pH-Wert',
-      value: 7.2,
+      value: '7,2',
       unit: '',
     });
     expect(restored.activities).toContain(entry.activity);
