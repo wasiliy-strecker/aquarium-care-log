@@ -54,6 +54,11 @@ Android-Berechtigungen, Zustellstatus und eine Test-Erinnerung sind erreichbar.
 Eine Benachrichtigung öffnet das zugehörige Aquarium.
 App- und Kanalsperren, „Nicht stören“, genaue Alarme und unbekannter Status
 werden getrennt erklärt. Zeiten bleiben beim Intervallwechsel und Aus-/Einschalten erhalten.
+Nach einer Zustellung aktualisiert sich der nächste Termin auch in der geöffneten
+Ansicht. Fehler beim Entfernen von Erinnerungen werden nach dem Löschen eines
+Aquariums angezeigt. Beim Zurückkehren zur App werden die Pläne erneut mit den
+gespeicherten Aquarien abgeglichen. Die Rückmeldung zu einer erfolgreich gesendeten
+Test-Erinnerung bleibt acht Sekunden sichtbar.
 
 Verschlüsselte `.aqbackup`-Dateien sichern Aquarien, Pflegeeinträge, Aktivitäten,
 Erinnerungspläne, Fotos und unveränderte PDFs mit Zuordnungen und Prüfsummen.

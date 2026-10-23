@@ -1,5 +1,46 @@
 # Prüfung AquariumLog
 
+## Erinnerungskorrekturen vom 23. Oktober 2026
+
+Ausgangsstand vor der Bearbeitung mit dem angeforderten leeren Commit `945b089`
+gesichert. Die Arbeitskopie war bereits sauber.
+
+`npm run check` erfolgreich mit 61 Tests in 14 Dateien. Formatprüfung, ESLint
+und TypeScript bestanden. Neue Regressionstests prüfen die sichtbare Warnung nach
+erfolgreicher Aquariumlöschung bei fehlgeschlagener Erinnerungsaktualisierung,
+die Wiederholung beim Zurückkehren zur App und deren Reihenfolge nach wartenden
+Datenbankänderungen. Ein Datenbankfehler lässt Aquarium und Erinnerungsplan bestehen.
+Die Tests verwenden ausschließlich synthetische Daten und echte temporäre SQLite-Dateien.
+
+Die Statusansicht reagiert auf native Änderungen ohne erneute Navigation und
+entfernt ihre Listener beim Verlassen. Veraltete Antworten überschreiben weiterhin
+keinen neueren Status. Tests prüfen außerdem acht Sekunden Anzeigezeit für eine
+erfolgreiche Testmeldung und vier Sekunden für die Standard-Snackbar.
+
+`npm run check:native` erfolgreich mit 51 JVM-Tests und Android-Lint ohne Fehler.
+Die neuen Observer-Tests prüfen Registrierung, Abmeldung und erneute Registrierung
+sowie den aktualisierten Status nach einer echten Receiver-Ausführung in Robolectric
+auf API 24, 25 und 35. AndroidX-Signaturrechte werden aus dem zusammengeführten
+Testmanifest geprüft und für Robolectric ausdrücklich freigegeben.
+
+Eine tatsächliche Alarmzustellung, Ton und Banner auf physischer Hardware bleiben
+separat zu prüfen. Die automatisierten Tests ändern keine Smartphone-Daten oder
+Systemeinstellungen.
+
+`npm run build:preview` erfolgreich in 57 Sekunden. Wegen der neuen nativen
+Statusweiterleitung ist ein APK-Update erforderlich. Die vorhandene Dev-Preview
+wurde über `npm run install:preview` datenbewahrend aktualisiert. Paket
+`com.appfactory.aquarium_log.dev`, Version 1.0.0, Code 1, nicht debuggable,
+Installer `null`. Die Signatur stimmte mit der installierten App überein.
+
+MainActivity gestartet und laufender Prozess bestätigt. Im gefilterten
+Prozessprotokoll keine AndroidRuntime-, ReactNativeJS- oder ExpoModulesCore-Fehler.
+Android führt weiterhin zwei AquariumLog-Alarme. Das Gerät zeigte AOD/Sperrbildschirm,
+deshalb keine visuelle Abnahme. Die genaue Alarmfreigabe bleibt gesperrt und
+„Nicht stören“ aktiv. Diese Systemeinstellungen wurden nicht verändert.
+
+## Frühere Abnahme vom 22. Oktober 2026
+
 Stand: 22. Oktober 2026. Abgleich mit ModellbauLog und Datenschutz nach MaschinenLog,
 ohne Mehrsprachigkeit. Anschließend die Dev-APK auf ausdrücklichen Auftrag gebaut
 und auf dem angeschlossenen Smartphone installiert. Keine Store-AAB gebaut.

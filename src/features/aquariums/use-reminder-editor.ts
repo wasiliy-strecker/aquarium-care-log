@@ -193,7 +193,10 @@ export function useReminderEditor({
       if (mounted.current) setAction(null);
     }
     if (mounted.current)
-      feedback.notify(reminderTestMessage(result, current?.doNotDisturb));
+      feedback.notify(
+        reminderTestMessage(result, current?.doNotDisturb),
+        result === 'posted' ? 8000 : 4000,
+      );
   }
   return {
     patch,

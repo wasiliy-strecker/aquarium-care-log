@@ -30,6 +30,7 @@ import {
   type MediaPort,
 } from './media/media-service';
 import { aquariumNative, type AquariumNative } from './native/aquarium-native';
+import { useReminderRecovery } from './native/use-reminder-recovery';
 import type { Environment } from './ports';
 export type Services = {
   aquariumService: AquariumService;
@@ -160,6 +161,7 @@ export function ServicesProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState('');
   const [revision, setRevision] = useState(0);
   const [attempt, setAttempt] = useState(0);
+  useReminderRecovery(services?.aquariumService);
   useEffect(() => {
     boot ??= createServices();
     boot.then(setServices).catch((e) => {

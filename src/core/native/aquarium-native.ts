@@ -34,6 +34,10 @@ export type PdfSession = {
   pages: { width: number; height: number }[];
 };
 export interface AquariumNative {
+  addListener(
+    event: 'onReminderStatusChanged',
+    listener: () => void,
+  ): { remove(): void };
   openPdfPreview(uri: string): Promise<PdfSession>;
   renderPdfPage(session: string, index: number, width: number): Promise<string>;
   closePdfPreview(session: string): Promise<void>;

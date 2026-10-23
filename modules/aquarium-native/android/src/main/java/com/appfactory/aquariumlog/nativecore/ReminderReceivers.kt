@@ -28,7 +28,7 @@ class AquariumReminderReceiver : BroadcastReceiver() {
             ReminderStore.setDeliveryFailed(context, aquariumId, true)
         } finally {
             ReminderScheduler.scheduleNext(context, reminder)
-            context.sendBroadcast(Intent(REMINDER_STATUS_CHANGED).setPackage(context.packageName))
+            notifyReminderStatusChanged(context)
         }
     }
 }
@@ -40,6 +40,6 @@ class ReminderRescheduleReceiver : BroadcastReceiver() {
             clockChanged = intent.action == Intent.ACTION_TIME_CHANGED ||
                 intent.action == Intent.ACTION_TIMEZONE_CHANGED,
         )
-        context.sendBroadcast(Intent(REMINDER_STATUS_CHANGED).setPackage(context.packageName))
+        notifyReminderStatusChanged(context)
     }
 }

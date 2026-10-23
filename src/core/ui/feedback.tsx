@@ -61,7 +61,7 @@ type Feedback = {
     danger?: boolean,
     cancelLabel?: string,
   ): Promise<boolean>;
-  notify(message: string): void;
+  notify(message: string, durationMs?: number): void;
 };
 const Context = createContext<Feedback | null>(null);
 export function FeedbackProvider({ children }: { children: ReactNode }) {
@@ -82,9 +82,15 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
     16;
   const resolve = useRef<((v: string | null) => void) | null>(null);
   const nextNoticeId = useRef(0);
-  const [notice, setNotice] = useState<{ id: number; message: string }>();
-  const notify = useCallback((message: string) => {
-    setNotice(message ? { id: ++nextNoticeId.current, message } : undefined);
+  const [notice, setNotice] = useState<{
+    id: number;
+    message: string;
+    durationMs?: number;
+  }>();
+  const notify = useCallback((message: string, durationMs?: number) => {
+    setNotice(
+      message ? { id: ++nextNoticeId.current, message, durationMs } : undefined,
+    );
   }, []);
   const dismissNotice = useCallback((id: number) => {
     setNotice((current) => (current?.id === id ? undefined : current));

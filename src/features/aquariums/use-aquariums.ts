@@ -11,6 +11,7 @@ import { PAGE_SIZE, measurementText } from '../../core/domain/models';
 import { useReminderStatus } from './use-reminder-status';
 import { errorText } from '../../core/ui/components';
 import { useTask } from '../../core/ui/use-task';
+import { useFeedback } from '../../core/ui/feedback';
 import {
   visibleAquariums,
   historyComparison,
@@ -73,6 +74,7 @@ export function useAquariums() {
 }
 export function useAquariumDetail(id: string, history = false) {
   const { aquariumService, native, revision, refresh } = useServices();
+  const feedback = useFeedback();
   const [aquarium, setAquarium] = useState<Aquarium>(),
     [photo, setPhoto] = useState<AquariumPhoto | null>(null),
     [entries, setEntries] = useState<CareEntry[]>([]),
@@ -173,9 +175,13 @@ export function useAquariumDetail(id: string, history = false) {
     ...task,
     remove: () =>
       task.run(async () => {
-        await aquariumService.delete('aquarium', id);
+        const warnings = await aquariumService.delete('aquarium', id);
         refresh();
         router.replace('/');
+        feedback.notify(
+          ['Aquarium gelöscht.', ...warnings].join('\n'),
+          warnings.length ? 8000 : 4000,
+        );
       }),
   };
 }

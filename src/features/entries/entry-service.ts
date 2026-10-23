@@ -46,7 +46,7 @@ export class AquariumService {
       return await this.reminders.sync(data.aquariums, data.entries);
     } catch {
       return [
-        'Gespeichert. Erinnerungen konnten nicht aktualisiert werden. Bitte die Berechtigungen in den Einstellungen prüfen.',
+        'Erinnerungen konnten nicht aktualisiert werden. Eine alte Erinnerung kann noch erscheinen. Wechsle kurz aus der App und öffne sie erneut, um es nochmals zu versuchen.',
       ];
     }
   }

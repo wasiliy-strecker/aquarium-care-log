@@ -27,6 +27,9 @@ export function useReminderStatusSnapshot() {
   useFocusEffect(
     useCallback(() => {
       active.current = true;
+      const changes = native.addListener('onReminderStatusChanged', () => {
+        void refresh();
+      });
       void refresh();
       const listener = AppState.addEventListener('change', (state) => {
         if (state === 'active') void refresh();
@@ -35,8 +38,9 @@ export function useReminderStatusSnapshot() {
         active.current = false;
         ++query.current;
         listener.remove();
+        changes.remove();
       };
-    }, [refresh]),
+    }, [native, refresh]),
   );
   return { status, loaded, refresh };
 }

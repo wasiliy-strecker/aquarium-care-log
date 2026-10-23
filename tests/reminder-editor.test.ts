@@ -137,9 +137,11 @@ it('tests the current aquarium and chronological entry and distinguishes deliver
     deliveryMode: 'normal',
   });
   expect(ports.notify.mock.lastCall?.[0]).toContain('an Android übergeben');
+  expect(ports.notify.mock.lastCall?.[1]).toBe(8000);
   ports.testReminder.mockResolvedValue('channelBlocked');
   await act(async () => editor.test());
   expect(ports.notify.mock.lastCall?.[0]).toContain('Erinnerungsart');
+  expect(ports.notify.mock.lastCall?.[1]).toBe(4000);
   ports.testReminder.mockRejectedValue(new Error('Synthetic delivery failure'));
   await act(async () => editor.test());
   expect(ports.notify.mock.lastCall?.[0]).toBe(
