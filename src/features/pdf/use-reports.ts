@@ -97,16 +97,16 @@ export function useReports(
         optionStyle: 'cards',
         options: [
           {
+            value: 'compact',
+            label: text.compact,
+            icon: 'description_outlined',
+          },
+          {
             value: 'full',
             label: text.withPhoto,
             description: hasPhotos ? undefined : text.noAttachments,
             icon: 'photo_outlined',
             disabled: !hasPhotos,
-          },
-          {
-            value: 'compact',
-            label: text.compact,
-            icon: 'description_outlined',
           },
         ],
       });
