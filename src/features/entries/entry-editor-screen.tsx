@@ -71,8 +71,10 @@ export function EntryEditorScreen() {
               du optional selbst eintragen.
             </Body>
           </Card>
-          <PhotoHints disabled={vm.busy} />
-          <PhotoExamplesButton disabled={vm.busy} />
+          <View style={{ paddingVertical: 8 }}>
+            <PhotoHints disabled={vm.busy} />
+            <PhotoExamplesButton disabled={vm.busy} />
+          </View>
           <Button
             icon="edit_note_outlined"
             title="Ohne Foto erfassen"

@@ -28,7 +28,7 @@ export function PhotoExamplesButton({
   const [visible, setVisible] = useState(false);
   const close = useCallback(() => setVisible(false), []);
   return (
-    <View style={{ alignItems: 'center', paddingVertical: 8 }}>
+    <View style={{ alignItems: 'center' }}>
       <Button
         title={messages.photoExamples.open}
         icon="photo_library_outlined"
