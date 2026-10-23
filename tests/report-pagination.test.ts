@@ -27,11 +27,17 @@ vi.mock('expo-router', async () => {
   const React = await import('react');
   return {
     router: { push: ports.push },
-    useFocusEffect: (callback: () => () => void) =>
-      React.useEffect(callback, [callback]),
+    useFocusEffect: (callback: () => void | (() => void)) => {
+      const focused = React.useContext(focusContext);
+      React.useEffect(() => {
+        if (focused) return callback();
+      }, [callback, focused]);
+    },
   };
 });
-vi.mock('expo-router/react-navigation', () => ({ useIsFocused: () => true }));
+vi.mock('expo-router/react-navigation', () => ({
+  useIsFocused: () => useContext(focusContext),
+}));
 vi.mock('../src/core/startup/startup', () => ({ useStartupHold: () => {} }));
 vi.mock('../src/core/ui/components', () => ({
   Body: 'Body',
@@ -75,6 +81,7 @@ vi.mock('../src/core/composition', () => ({
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
 type Fixture = Awaited<ReturnType<typeof fixture>>;
+const focusContext = createContext(true);
 const servicesContext = createContext<{
   aquariumService: Fixture['service'];
   reports: Fixture['reports'];
@@ -108,9 +115,13 @@ const button = (title: string) => root().findByProps({ title });
 function Harness({
   single,
   hasPhotos = false,
+  focused = true,
+  dataRevision = 0,
 }: {
   single: boolean;
   hasPhotos?: boolean;
+  focused?: boolean;
+  dataRevision?: number;
 }) {
   const [revision, setRevision] = useState(0);
   return createElement(
@@ -119,15 +130,19 @@ function Harness({
       value: {
         aquariumService: active.service,
         reports: active.reports,
-        revision,
+        revision: revision + dataRevision,
         refresh: () => setRevision((n) => n + 1),
       },
     },
-    createElement(Reports, {
-      aquariumId: aquarium.id,
-      entryId: single ? entryId : null,
-      hasPhotos,
-    }),
+    createElement(
+      focusContext.Provider,
+      { value: focused },
+      createElement(Reports, {
+        aquariumId: aquarium.id,
+        entryId: single ? entryId : null,
+        hasPhotos,
+      }),
+    ),
   );
 }
 async function settled(check: () => void) {
@@ -306,6 +321,54 @@ it.each([
     expect(text()).not.toContain('Seite 2');
     expect((await active.repo.snapshot()).reports).toHaveLength(10);
     expect(await active.vault.read(file)).toBeInstanceOf(Uint8Array);
+  },
+);
+
+it.each(['data refresh', 'screen return'])(
+  'clears an obsolete no-entries PDF error after saving the first entry on %s',
+  async (trigger) => {
+    await active.service.delete('entry', entryId);
+    await active.service.delete('entry', otherStepId);
+    ports.choose.mockResolvedValue('compact');
+    await act(async () => {
+      renderer = create(createElement(Harness, { single: false }));
+    });
+    await press('PDF erstellen');
+    const error = () =>
+      root().findAllByProps({
+        text: 'Für dieses Aquarium gibt es noch keine Pflegeeinträge.',
+      });
+    expect(error()).toHaveLength(1);
+    expect(ports.push).not.toHaveBeenCalled();
+    if (trigger === 'screen return')
+      await act(async () =>
+        renderer!.update(
+          createElement(Harness, {
+            single: false,
+            focused: false,
+          }),
+        ),
+      );
+    const draft = await active.service.draft(aquarium.id);
+    draft.form.activity = 'Wasserwechsel';
+    await active.service.saveEntry(draft);
+    await act(async () =>
+      renderer!.update(
+        createElement(Harness, {
+          single: false,
+          dataRevision: trigger === 'data refresh' ? 1 : 0,
+        }),
+      ),
+    );
+    await settled(() => expect(error()).toHaveLength(0));
+    await press('PDF erstellen');
+    await settled(() =>
+      expect(ports.push).toHaveBeenCalledWith({
+        pathname: '/pdf/[id]',
+        params: { id: expect.any(String) },
+      }),
+    );
+    expect((await active.repo.snapshot()).reports).toHaveLength(1);
   },
 );
 

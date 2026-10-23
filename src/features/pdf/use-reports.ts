@@ -24,6 +24,7 @@ export function useReports(
   } = useServices();
   const feedback = useFeedback();
   const task = useTask();
+  const { setError } = task;
   const [reports, setReports] = useState<SavedReport[]>([]),
     [total, setTotal] = useState(0),
     [loadedOffset, setLoadedOffset] = useState<number | null>(null),
@@ -35,6 +36,13 @@ export function useReports(
     [deletingId, setDeletingId] = useState<string>();
   const pageLoading = loading || (!loadError && loadedOffset !== offset);
   useStartupHold(focused && pageLoading);
+  useFocusEffect(
+    useCallback(() => {
+      setError('');
+      // Scope and revision changes invalidate errors from earlier actions.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [aquariumId, entryId, revision, setError]),
+  );
   useFocusEffect(
     useCallback(() => {
       let active = true;
